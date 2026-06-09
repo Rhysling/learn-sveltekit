@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '$lib/styles/global.scss';
 	import type { RouteData } from "$lib/types/auth";
 
 	let { data, children } = $props() as { data: RouteData; children: () => any };
