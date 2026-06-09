@@ -1,0 +1,12 @@
+app = "sveltekit-sqlite-jwt"
+
+[build]
+  image = "node:20-alpine"
+
+[env]
+  DATABASE_URL = "file:/data/sqlite.db"
+  IMAGE_STORAGE_PATH = "/data/uploads"
+
+[[mounts]]
+  source = "data"
+  destination = "/data"

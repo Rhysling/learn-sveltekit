@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "teach": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/teach/SKILL.md",
+      "computedHash": "e75233cbcac1cc733cc8044a2f9f95b84b40bd76de51d2ff13bf1e642e7e8bda"
+    }
+  }
+}

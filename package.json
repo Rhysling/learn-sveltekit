@@ -1,0 +1,28 @@
+{
+  "name": "sveltekit-sqlite-jwt",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node build",
+    "sync": "svelte-kit sync",
+    "migrate": "prisma migrate dev --name init",
+    "generate": "prisma generate"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "^3.0.0",
+    "@sveltejs/kit": "^2.64.0",
+    "@types/node": "^20.0.0",
+    "prisma": "^5.15.0",
+    "svelte": "^5.0.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.15.0",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.1.0"
+  }
+}
