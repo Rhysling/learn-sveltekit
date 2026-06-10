@@ -1,15 +1,22 @@
 <script lang="ts">
-	import '$lib/styles/global.scss';
+	import "$lib/styles/global.scss";
 	import type { RouteData } from "$lib/types/auth";
 
-	let { data, children } = $props() as { data: RouteData; children: () => any };
+	type LayoutData = RouteData & { currentPath: string };
+	let { data, children } = $props() as { data: LayoutData; children: () => any };
 </script>
 
 <nav
 	style="padding: 1rem; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; gap: 1rem; align-items: center;"
 >
 	<div>
-		<strong>SvelteKit + SQLite + JWT</strong>
+		<strong>
+			{#if data.currentPath === "/"}
+				SvelteKit + SQLite Tutorials
+			{:else}
+				<a href="/">SvelteKit + SQLite Tutorials</a>
+			{/if}
+		</strong>
 	</div>
 
 	{#if data.user}

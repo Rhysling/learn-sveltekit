@@ -4,22 +4,18 @@
 </script>
 
 <div class="card">
-	<h1>SvelteKit Tutorial Collection</h1>
-	<p>Welcome to the interactive SvelteKit tutorial collection.</p>
-
-	{#if data.user}
-		<p>You are signed in as <strong>{data.user.email}</strong>.</p>
-	{/if}
+	<h1>Examples</h1>
+	<p>
+		This section will host interactive SvelteKit examples and tutorial
+		sequences.
+	</p>
 
 	<section class="links">
-		<h2>Start learning</h2>
+		<h2>Available example</h2>
 		<ul>
-			<li>
-				<a href="/examples">Examples section</a> — interactive tutorials and example
-				projects.
-			</li>
+			<li><a href="/examples/upload">Image upload example</a></li>
 		</ul>
-		<p class="placeholder">More tutorial sequences will be added here soon.</p>
+		<p class="placeholder">More examples are coming soon.</p>
 	</section>
 </div>
 

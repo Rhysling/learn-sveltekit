@@ -42,7 +42,7 @@ Svelte gives you a powerful component model. SvelteKit adds the full app framewo
 - routing from filesystem paths
 - server-side rendering and server-only modules
 - API endpoints alongside UI routes
-- adapter-based deployment to Node, Fly.io, Vercel, etc.
+- adapter-based deployment to Node and Fly.io
 
 ### Svelte vs SvelteKit: the key differences
 

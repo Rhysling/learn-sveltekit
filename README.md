@@ -5,7 +5,7 @@ This project is a minimal SvelteKit full-stack starter with:
 - SvelteKit + Svelte 5 with TypeScript
 - SQLite via Prisma for local development
 - JWT authentication with HttpOnly cookies
-- Vercel-ready deployment settings
+- Fly.io-ready deployment settings
 
 ## Setup
 
