@@ -1,8 +1,52 @@
+# Dependencies
+node_modules/
+
+# SvelteKit build output
+.svelte-kit/
+@.svelte-kit/
+build/
+
+# Vite
+dist/
+.vite/
+
+# Environment variables
 .env
-.env.local
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+/coverage/
+/playwright-report/
+/test-results/
+
+# Package manager lock files (keep only the one you use)
+# Uncomment the ones you want to ignore:
+package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Misc
+*.tsbuildinfo
+
+# Project Specific
 dev.db
 uploads
-node_modules
-.DS_Store
-build
-.vscode
