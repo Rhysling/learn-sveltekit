@@ -1,21 +1,13 @@
-import { redirect, type PageServerLoad } from '@sveltejs/kit';
-import { verifyToken } from '$lib/server/auth';
+import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 import type { RouteData, SessionUser } from '$lib/types/auth';
 
-export const load: PageServerLoad = async ({ cookies }) => {
-	const token = cookies.get('token');
-	if (!token) {
-		throw redirect(303, '/');
-	}
-
-	const payload = await verifyToken(token);
-	if (!payload) {
-		throw redirect(303, '/');
-	}
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.user) throw redirect(303, '/');
 
 	const user: SessionUser = {
-		email: payload.email,
-		name: payload.name
+		email: locals.user.email,
+		name: locals.user.name
 	};
 
 	return {

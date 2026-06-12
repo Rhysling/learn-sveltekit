@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 3: Svelte 5 Runes — $state, $derived, $effect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --orange: #ea580c;
+      --orange-light: #fff7ed;
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+      --code-prop: #f8c555;
+      --code-rune: #ff9cac;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+
+    /* Header */
+    .lesson-header { border-bottom: 2px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-tag { display: inline-block; background: var(--accent-light); color: var(--accent); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.25rem 0.75rem; border-radius: 999px; margin-bottom: 0.75rem; }
+    h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+    .lesson-subtitle { color: var(--muted); font-size: 1.05rem; }
+    .lesson-meta { display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.85rem; color: var(--muted); }
+
+    /* Typography */
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.5rem 0 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--accent); }
+    p { margin-bottom: 1rem; }
+    a { color: var(--accent); text-decoration: underline; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* Callouts */
+    .callout { border-left: 3px solid; padding: 0.85rem 1rem; border-radius: 0 6px 6px 0; margin: 1.25rem 0; font-size: 0.95rem; }
+    .callout-title { font-weight: 600; margin-bottom: 0.25rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .callout.vue   { background: var(--green-light);  border-color: var(--green);  }
+    .callout.vue   .callout-title { color: var(--green); }
+    .callout.note  { background: var(--accent-light); border-color: var(--accent); }
+    .callout.note  .callout-title { color: var(--accent); }
+    .callout.warn  { background: var(--yellow-light); border-color: var(--yellow); }
+    .callout.warn  .callout-title { color: var(--yellow); }
+    .callout.danger{ background: var(--red-light);    border-color: var(--red);    }
+    .callout.danger .callout-title { color: var(--red); }
+    .callout.teacher { background: var(--orange-light); border-color: var(--orange); }
+    .callout.teacher .callout-title { color: var(--orange); }
+
+    /* Code */
+    pre { background: var(--code-bg); color: var(--code-text); border-radius: 8px; padding: 1.25rem 1.5rem; overflow-x: auto; margin: 1rem 0 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; line-height: 1.65; }
+    .code-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.3rem; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: #e9eaf0; padding: 0.15em 0.4em; border-radius: 3px; }
+    pre code { background: none; padding: 0; font-size: inherit; }
+
+    .kw   { color: var(--code-keyword); }
+    .fn   { color: var(--code-fn); }
+    .str  { color: var(--code-string); }
+    .cm   { color: var(--code-comment); font-style: italic; }
+    .ty   { color: var(--code-type); }
+    .op   { color: var(--code-op); }
+    .pr   { color: var(--code-prop); }
+    .rune { color: var(--code-rune); font-weight: 500; }
+
+    /* Rune cards */
+    .rune-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.5rem 0; }
+    .rune-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+    .rune-card .rune-name { font-family: 'JetBrains Mono', monospace; font-size: 1.05rem; font-weight: 700; color: var(--code-rune); margin-bottom: 0.25rem; }
+    .rune-card .rune-vue { font-size: 0.75rem; color: var(--green); font-weight: 600; margin-bottom: 0.4rem; }
+    .rune-card p { font-size: 0.85rem; color: var(--muted); margin: 0; }
+
+    /* Comparison */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0 1.5rem; }
+    .compare-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
+    .compare-label.v4 { color: var(--muted); }
+    .compare-label.v5 { color: var(--accent); }
+    .compare pre { margin: 0; font-size: 0.78rem; }
+
+    /* Quiz */
+    .quiz-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; margin: 2.5rem 0; }
+    .quiz-section h2 { border-top: none; margin-top: 0; padding-top: 0; }
+    .question { margin-bottom: 1.75rem; }
+    .question-text { font-weight: 600; margin-bottom: 0.75rem; line-height: 1.5; }
+    .question-num { display: inline-block; background: var(--accent); color: white; font-size: 0.75rem; font-weight: 700; width: 1.5rem; height: 1.5rem; line-height: 1.5rem; text-align: center; border-radius: 50%; margin-right: 0.5rem; }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; font-size: 0.95rem; }
+    .option:hover { border-color: var(--accent); background: var(--accent-light); }
+    .option.correct { background: var(--green-light); border-color: var(--green); color: var(--green); font-weight: 500; }
+    .option.wrong   { background: var(--red-light);   border-color: var(--red);   color: var(--red); }
+    .option.disabled { pointer-events: none; opacity: 0.55; }
+    .option.correct.disabled { opacity: 1; }
+    .option-letter { font-weight: 700; font-size: 0.8rem; min-width: 1.2rem; color: var(--muted); }
+    .option.correct .option-letter { color: var(--green); }
+    .option.wrong   .option-letter { color: var(--red); }
+    .feedback { font-size: 0.875rem; margin-top: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 6px; display: none; }
+    .feedback.correct { background: var(--green-light); color: var(--green); }
+    .feedback.wrong   { background: var(--red-light);   color: var(--red); }
+    .feedback.show    { display: block; }
+    .quiz-score { margin-top: 1.5rem; padding: 1rem 1.25rem; background: var(--accent-light); border-radius: 8px; font-weight: 600; display: none; }
+    .quiz-score.show { display: block; }
+    .score-btn { display: inline-block; margin-top: 1rem; padding: 0.6rem 1.4rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .score-btn:hover { opacity: 0.88; }
+
+    /* Exercises */
+    .exercises { margin-top: 2.5rem; }
+    .exercise { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; }
+    .exercise-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .exercise-num { background: var(--accent); color: white; font-size: 0.8rem; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 999px; white-space: nowrap; }
+    .exercise-title { font-weight: 700; font-size: 1rem; }
+    .exercise-check { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .exercise-check input[type="checkbox"] { margin-top: 0.2rem; accent-color: var(--accent); width: 1rem; height: 1rem; flex-shrink: 0; cursor: pointer; }
+    .exercise-check label { cursor: pointer; line-height: 1.5; }
+    .verify-box { background: var(--green-light); border-left: 3px solid var(--green); border-radius: 0 6px 6px 0; padding: 0.6rem 0.85rem; font-size: 0.875rem; margin-top: 0.75rem; color: #065f46; }
+    .verify-box strong { color: var(--green); }
+
+    /* Summary */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+    .summary-card h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.5rem; }
+    .summary-card ul { padding-left: 1.1rem; font-size: 0.9rem; }
+    .summary-card li { margin-bottom: 0.25rem; }
+
+    /* Decision table */
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.9rem; }
+    th { background: var(--accent-light); color: var(--accent); text-align: left; padding: 0.6rem 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td code { font-size: 0.82em; }
+
+    @media (max-width: 620px) {
+      .compare, .summary-grid, .rune-cards { grid-template-columns: 1fr; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <div class="lesson-tag">Lesson 3 · Svelte 5</div>
+    <h1>$state, $derived, $effect</h1>
+    <p class="lesson-subtitle">The Svelte 5 reactivity model — and how to think in runes instead of Vue composables.</p>
+    <div class="lesson-meta">
+      <span>⏱ ~25 min</span>
+      <span>📋 Quiz + 3 exercises</span>
+      <span>🎯 Tied to: idiomatic Svelte, dynamic UI</span>
+    </div>
+  </header>
+
+  <!-- Overview -->
+  <p>You already use <code>$props()</code> and have touched <code>$state</code> once (the <code>isSubmitting</code> flag on the notes page). This lesson completes the picture: the three runes you'll reach for constantly when building reactive components.</p>
+
+  <div class="rune-cards">
+    <div class="rune-card">
+      <div class="rune-name">$state</div>
+      <div class="rune-vue">≈ Vue ref() / reactive()</div>
+      <p>Declares reactive local state. Mutating it updates the UI.</p>
+    </div>
+    <div class="rune-card">
+      <div class="rune-name">$derived</div>
+      <div class="rune-vue">≈ Vue computed()</div>
+      <p>A value that automatically recalculates when its dependencies change.</p>
+    </div>
+    <div class="rune-card">
+      <div class="rune-name">$effect</div>
+      <div class="rune-vue">≈ Vue watchEffect()</div>
+      <p>Runs code as a side effect when reactive values change.</p>
+    </div>
+  </div>
+
+  <!-- $state -->
+  <h2>$state — Reactive Variables</h2>
+
+  <p>The Svelte 4 way was <code>let count = 0</code> — any top-level <code>let</code> in a <code>&lt;script&gt;</code> was implicitly reactive. Svelte 5 makes it explicit with a rune:</p>
+
+  <div class="compare">
+    <div>
+      <div class="compare-label v4">Svelte 4</div>
+      <pre><code><span class="cm">// implicit reactivity — any let</span>
+<span class="kw">let</span> <span class="pr">count</span> <span class="op">=</span> <span class="op">0</span>;
+<span class="kw">let</span> <span class="pr">name</span> <span class="op">=</span> <span class="str">'Alice'</span>;</code></pre>
+    </div>
+    <div>
+      <div class="compare-label v5">Svelte 5</div>
+      <pre><code><span class="cm">// explicit — only rune vars are reactive</span>
+<span class="kw">let</span> <span class="pr">count</span> <span class="op">=</span> <span class="rune">$state</span>(<span class="op">0</span>);
+<span class="kw">let</span> <span class="pr">name</span>  <span class="op">=</span> <span class="rune">$state</span>(<span class="str">'Alice'</span>);</code></pre>
+    </div>
+  </div>
+
+  <p>The <code>$state</code> call is a compiler hint — not a runtime function. It tells Svelte to track changes to this variable and update the DOM when it changes. You still mutate it like a normal variable:</p>
+
+  <pre><code><span class="kw">let</span> <span class="pr">count</span> <span class="op">=</span> <span class="rune">$state</span>(<span class="op">0</span>);
+<span class="pr">count</span> <span class="op">+=</span> <span class="op">1</span>;  <span class="cm">// triggers UI update — no .value needed (unlike Vue ref)</span></code></pre>
+
+  <div class="callout vue">
+    <div class="callout-title">Vs Vue</div>
+    In Vue you'd write <code>const count = ref(0)</code> and read it as <code>count.value</code>. In Svelte 5, <code>$state</code> needs no <code>.value</code> — you use the variable directly. This is one of Svelte's key ergonomic wins.
+  </div>
+
+  <h3>Deep reactivity with objects and arrays</h3>
+
+  <p>When you pass an object or array to <code>$state</code>, Svelte wraps it in a <strong>reactive proxy</strong> — mutations to nested properties trigger updates automatically:</p>
+
+  <pre><code><span class="kw">let</span> <span class="pr">user</span> <span class="op">=</span> <span class="rune">$state</span>({ <span class="pr">name</span><span class="op">:</span> <span class="str">'Alice'</span>, <span class="pr">age</span><span class="op">:</span> <span class="op">30</span> });
+<span class="kw">let</span> <span class="pr">tags</span> <span class="op">=</span> <span class="rune">$state</span>([<span class="str">'svelte'</span>, <span class="str">'typescript'</span>]);
+
+<span class="pr">user</span>.<span class="pr">age</span> <span class="op">+=</span> <span class="op">1</span>;          <span class="cm">// ✓ UI updates</span>
+<span class="pr">tags</span>.<span class="fn">push</span>(<span class="str">'sveltekit'</span>); <span class="cm">// ✓ UI updates — array methods work</span></code></pre>
+
+  <div class="callout warn">
+    <div class="callout-title">The destructuring gotcha</div>
+    If you destructure a <code>$state</code> object, the extracted values are snapshots — they <strong>break reactivity</strong>:
+    <pre style="margin-top:0.6rem"><code><span class="kw">let</span> <span class="pr">user</span> <span class="op">=</span> <span class="rune">$state</span>({ <span class="pr">name</span><span class="op">:</span> <span class="str">'Alice'</span> });
+<span class="kw">const</span> { <span class="pr">name</span> } <span class="op">=</span> <span class="pr">user</span>;  <span class="cm">// ✗ name is now a plain string — won't update</span>
+<span class="pr">user</span>.<span class="pr">name</span> <span class="op">=</span> <span class="str">'Bob'</span>;         <span class="cm">// name variable still reads 'Alice'</span></code></pre>
+    Always read through the reactive object: <code>user.name</code>.
+  </div>
+
+  <p><a href="https://svelte.dev/docs/svelte/$state" target="_blank">Official $state docs →</a></p>
+
+  <!-- $derived -->
+  <h2>$derived — Computed Values</h2>
+
+  <p>If a value <em>depends on</em> state and should stay in sync automatically, use <code>$derived</code> — not <code>$state</code>. Svelte tracks what state you read inside the expression and re-runs it whenever that state changes.</p>
+
+  <div class="compare">
+    <div>
+      <div class="compare-label v4">Svelte 4 reactive statement</div>
+      <pre><code><span class="kw">let</span> <span class="pr">count</span> <span class="op">=</span> <span class="op">0</span>;
+<span class="op">$:</span> <span class="pr">doubled</span> <span class="op">=</span> <span class="pr">count</span> <span class="op">*</span> <span class="op">2</span>;</code></pre>
+    </div>
+    <div>
+      <div class="compare-label v5">Svelte 5</div>
+      <pre><code><span class="kw">let</span> <span class="pr">count</span>   <span class="op">=</span> <span class="rune">$state</span>(<span class="op">0</span>);
+<span class="kw">let</span> <span class="pr">doubled</span> <span class="op">=</span> <span class="rune">$derived</span>(<span class="pr">count</span> <span class="op">*</span> <span class="op">2</span>);</code></pre>
+    </div>
+  </div>
+
+  <p>For anything beyond a single expression, use <code>$derived.by</code> which takes a function:</p>
+
+  <pre><code><span class="kw">let</span> <span class="pr">items</span> <span class="op">=</span> <span class="rune">$state</span>([<span class="op">3</span>, <span class="op">1</span>, <span class="op">4</span>, <span class="op">1</span>, <span class="op">5</span>]);
+
+<span class="kw">let</span> <span class="pr">sorted</span> <span class="op">=</span> <span class="rune">$derived</span>.<span class="fn">by</span>(() <span class="op">=></span> {
+  <span class="kw">return</span> [...<span class="pr">items</span>].<span class="fn">sort</span>((<span class="pr">a</span>, <span class="pr">b</span>) <span class="op">=></span> <span class="pr">a</span> <span class="op">-</span> <span class="pr">b</span>);
+});</code></pre>
+
+  <div class="callout vue">
+    <div class="callout-title">Vs Vue</div>
+    This is Vue's <code>computed()</code> — same mental model, cleaner syntax. The key difference: <code>$derived</code> expressions must be <strong>pure</strong> (no side effects, no state mutations). If you need side effects, that's <code>$effect</code>.
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title">$derived is lazy</div>
+    Svelte uses a "push-pull" model: when a dependency changes, <code>$derived</code> is marked dirty immediately (push), but the expression only re-runs when the value is actually read (pull). This means unused derived values don't waste computation.
+  </div>
+
+  <p><a href="https://svelte.dev/docs/svelte/$derived" target="_blank">Official $derived docs →</a></p>
+
+  <!-- $effect -->
+  <h2>$effect — Side Effects</h2>
+
+  <p><code>$effect</code> is for code that needs to run in response to state changes but <em>isn't</em> computing a new value — things like syncing with the DOM, calling a third-party library, logging, or updating the browser title.</p>
+
+  <pre><code><span class="kw">let</span> <span class="pr">query</span> <span class="op">=</span> <span class="rune">$state</span>(<span class="str">''</span>);
+
+<span class="rune">$effect</span>(() <span class="op">=></span> {
+  <span class="cm">// runs after mount, then again whenever `query` changes</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'Search query changed:'</span>, <span class="pr">query</span>);
+});</code></pre>
+
+  <h3>Cleanup — returning a teardown function</h3>
+
+  <p>If your effect creates a subscription, interval, or event listener, return a cleanup function. Svelte calls it before the next run and when the component unmounts:</p>
+
+  <pre><code><span class="kw">let</span> <span class="pr">ms</span> <span class="op">=</span> <span class="rune">$state</span>(<span class="op">1000</span>);
+
+<span class="rune">$effect</span>(() <span class="op">=></span> {
+  <span class="kw">const</span> <span class="pr">id</span> <span class="op">=</span> <span class="fn">setInterval</span>(() <span class="op">=></span> <span class="fn">tick</span>(), <span class="pr">ms</span>);
+  <span class="kw">return</span> () <span class="op">=></span> <span class="fn">clearInterval</span>(<span class="pr">id</span>);  <span class="cm">// cleanup runs when ms changes or component unmounts</span>
+});</code></pre>
+
+  <h3>Three rules for $effect</h3>
+
+  <ol>
+    <li><strong>Browser-only.</strong> Effects never run during server-side rendering. Don't use them for initial data — use <code>load</code> functions for that.</li>
+    <li><strong>Synchronous tracking only.</strong> Svelte only tracks state read <em>synchronously</em> in the effect body. State read after an <code>await</code> is not tracked.</li>
+    <li><strong>Runs after DOM updates.</strong> The effect fires after the DOM has been updated — so <code>document.querySelector</code> will reflect the new state.</li>
+  </ol>
+
+  <div class="callout vue">
+    <div class="callout-title">Vs Vue</div>
+    This is Vue's <code>watchEffect()</code> — auto-tracks dependencies synchronously. In Vue you use <code>onCleanup(fn)</code> for cleanup; in Svelte 5 you <code>return</code> a function instead. Both run immediately after mount.
+  </div>
+
+  <!-- The key anti-pattern -->
+  <h2>The Most Important Rule: Don't Use $effect to Derive Values</h2>
+
+  <p>This is the single most common mistake coming from Vue. In Vue, it's tempting to use a watcher to sync values. In Svelte 5, that's an anti-pattern:</p>
+
+  <div class="compare">
+    <div>
+      <div class="compare-label" style="color:var(--red)">✗ Anti-pattern</div>
+      <pre><code><span class="kw">let</span> <span class="pr">text</span>    <span class="op">=</span> <span class="rune">$state</span>(<span class="str">''</span>);
+<span class="kw">let</span> <span class="pr">charCount</span> <span class="op">=</span> <span class="rune">$state</span>(<span class="op">0</span>);
+
+<span class="rune">$effect</span>(() <span class="op">=></span> {
+  <span class="pr">charCount</span> <span class="op">=</span> <span class="pr">text</span>.<span class="pr">length</span>; <span class="cm">// ✗</span>
+});</code></pre>
+    </div>
+    <div>
+      <div class="compare-label" style="color:var(--green)">✓ Idiomatic Svelte 5</div>
+      <pre><code><span class="kw">let</span> <span class="pr">text</span>      <span class="op">=</span> <span class="rune">$state</span>(<span class="str">''</span>);
+<span class="kw">let</span> <span class="pr">charCount</span> <span class="op">=</span> <span class="rune">$derived</span>(<span class="pr">text</span>.<span class="pr">length</span>);
+
+<span class="cm">// charCount stays in sync automatically</span>
+<span class="cm">// no effect needed</span></code></pre>
+    </div>
+  </div>
+
+  <p>Reserve <code>$effect</code> for things that genuinely can't be expressed as a derived value: DOM manipulation, third-party library calls, browser APIs.</p>
+
+  <!-- Decision table -->
+  <h2>Which Rune Should I Use?</h2>
+
+  <table>
+    <thead>
+      <tr><th>Situation</th><th>Use</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>I need a variable the user can change (input, counter, toggle)</td><td><code>$state</code></td></tr>
+      <tr><td>I need a value that depends on other state (count, total, filtered list)</td><td><code>$derived</code></td></tr>
+      <tr><td>I need to run code when state changes (update document.title, call an API, sync to a library)</td><td><code>$effect</code></td></tr>
+      <tr><td>I need data from the server</td><td><code>load</code> function — not runes</td></tr>
+      <tr><td>I need to pass data from parent to child</td><td><code>$props</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><a href="https://svelte.dev/docs/svelte/$effect" target="_blank">Official $effect docs →</a></p>
+
+  <!-- Quiz -->
+  <div class="quiz-section">
+    <h2>Quiz — Check Your Understanding</h2>
+    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Click an option to check immediately.</p>
+
+    <!-- Q1 -->
+    <div class="question" id="q1">
+      <div class="question-text"><span class="question-num">1</span> You write <code>let todos = $state([{ done: false, text: 'buy milk' }])</code>, then <code>const first = todos[0]</code>. You later run <code>todos[0].done = true</code>. Does <code>first.done</code> update?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q1',true)"><span class="option-letter">A</span> No — destructuring extracts a snapshot; first is no longer reactive</div>
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">B</span> Yes — $state proxies are shared by reference</div>
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">C</span> It depends on whether you use const or let</div>
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">D</span> Yes — arrays always share references in JavaScript</div>
+      </div>
+      <div class="feedback wrong" id="q1-wrong">Close, but actually array element access (<code>todos[0]</code>) does return the reactive proxy object, so <code>first.done</code> <em>would</em> reflect changes since you're still reading through the proxy. The destructuring gotcha is more pronounced when you do <code>const { done } = todos[0]</code> — <em>that</em> extracted primitive breaks reactivity.</div>
+      <div class="feedback correct" id="q1-correct">Correct — and worth understanding precisely: <code>const first = todos[0]</code> still holds the proxy object, so <code>first.done</code> would update. But <code>const { done } = todos[0]</code> extracts a plain boolean — <em>that</em> breaks reactivity. The danger is primitive extraction, not object reference.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question" id="q2">
+      <div class="question-text"><span class="question-num">2</span> You need a filtered list that updates whenever <code>items</code> or <code>searchQuery</code> change. Which is the correct approach?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">A</span> Use <code>$state</code> for filtered and update it in a <code>$effect</code></div>
+        <div class="option" onclick="answer(this,'q2',true)"><span class="option-letter">B</span> Use <code>$derived.by(() => items.filter(...))</code></div>
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">C</span> Call a function directly in the template: <code>{getFiltered(items, query)}</code></div>
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">D</span> Use <code>$state</code> and manually update it on every mutation</div>
+      </div>
+      <div class="feedback wrong" id="q2-wrong">Option A is the anti-pattern — using <code>$effect</code> to sync derived state. Option C works but recomputes on every render cycle. <code>$derived.by</code> is the idiomatic answer: it caches the result and only recomputes when <code>items</code> or <code>searchQuery</code> actually change.</div>
+      <div class="feedback correct" id="q2-correct">Correct! <code>$derived.by</code> is perfect here — multi-statement logic, auto-tracks both <code>items</code> and <code>searchQuery</code>, caches the result, and never requires an effect.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question" id="q3">
+      <div class="question-text"><span class="question-num">3</span> Does <code>$effect</code> run during server-side rendering (SSR)?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">A</span> Yes — it runs on both server and client</div>
+        <div class="option" onclick="answer(this,'q3',true)"><span class="option-letter">B</span> No — $effect is browser-only</div>
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">C</span> Only if you use $effect.pre</div>
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">D</span> Yes, but only during prerendering</div>
+      </div>
+      <div class="feedback wrong" id="q3-wrong">Effects are browser-only. The server renders HTML and has no DOM to interact with, so Svelte skips all <code>$effect</code> calls during SSR. If you need server-side initialization, use a <code>load</code> function.</div>
+      <div class="feedback correct" id="q3-correct">Correct. <code>$effect</code> never runs on the server. This is why you shouldn't use effects for data fetching — use <code>+page.server.ts</code> load functions instead, which run on the server where they belong.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question" id="q4">
+      <div class="question-text"><span class="question-num">4</span> Your <code>$effect</code> sets up an event listener. How do you clean it up when the component is destroyed?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">A</span> Use the <code>onDestroy</code> lifecycle function from svelte</div>
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">B</span> Pass a second argument to <code>$effect</code> as the cleanup</div>
+        <div class="option" onclick="answer(this,'q4',true)"><span class="option-letter">C</span> Return a cleanup function from the <code>$effect</code> callback</div>
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">D</span> Svelte handles cleanup automatically — nothing needed</div>
+      </div>
+      <div class="feedback wrong" id="q4-wrong">While <code>onDestroy</code> still works in Svelte 5 for backwards compat, the idiomatic way is to <em>return</em> a cleanup function from the effect itself. It's called before the next effect run and when the component unmounts. No second argument exists.</div>
+      <div class="feedback correct" id="q4-correct">Correct! Return a teardown function: <code>$effect(() => { const el = ...; return () => el.removeEventListener(...); })</code>. Svelte calls it before the next effect run and on unmount. This co-locates setup and teardown.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question" id="q5">
+      <div class="question-text"><span class="question-num">5</span> You have <code>let name = $state('')</code>. Inside a <code>$effect</code>, you do: <code>const upper = name.toUpperCase(); await someApi(upper);</code>. Is <code>upper</code> tracked as a dependency?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q5',true)"><span class="option-letter">A</span> Yes — <code>name</code> is read synchronously before the await, so it's tracked</div>
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">B</span> No — Svelte only tracks values read after the first await</div>
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">C</span> No — <code>upper</code> is a derived string, not a $state variable</div>
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">D</span> It depends on whether the effect is async</div>
+      </div>
+      <div class="feedback wrong" id="q5-wrong">Svelte tracks reactive values read <em>synchronously</em> in the effect. Since <code>name</code> is read on the line before <code>await</code>, it is synchronously read and therefore tracked. The tracking window closes at the first <code>await</code>.</div>
+      <div class="feedback correct" id="q5-correct">Correct. <code>name</code> is read synchronously, so it's tracked. Any reactive value read <em>after</em> an <code>await</code> would not be tracked — that's the synchronous-only rule in action.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question" id="q6">
+      <div class="question-text"><span class="question-num">6</span> In Vue you'd write <code>const len = computed(() => text.value.length)</code>. What's the Svelte 5 equivalent (assuming <code>text = $state('')</code>)?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">A</span> <code>let len = $state(text.length)</code></div>
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">B</span> <code>$effect(() => { len = text.length })</code></div>
+        <div class="option" onclick="answer(this,'q6',true)"><span class="option-letter">C</span> <code>let len = $derived(text.length)</code></div>
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">D</span> <code>let len = $derived(() => text.length)</code></div>
+      </div>
+      <div class="feedback wrong" id="q6-wrong">Option A captures the value at declaration time and won't update. Option B is the anti-pattern. Option D passes a function — but <code>$derived</code> takes an expression directly; the function form is <code>$derived.by(() => ...)</code>. The correct answer is C.</div>
+      <div class="feedback correct" id="q6-correct">Correct! No <code>.value</code>, no function wrapper — just <code>$derived(expression)</code>. Svelte reads the expression, tracks whatever state is accessed, and re-evaluates automatically. Cleaner than Vue's <code>computed()</code>.</div>
+    </div>
+
+    <button class="score-btn" onclick="showScore()">Show my score</button>
+    <div class="quiz-score" id="quiz-score"></div>
+  </div>
+
+  <!-- Exercises -->
+  <div class="exercises">
+    <h2>Hands-On Exercises</h2>
+    <p>All three exercises are in your notes page: <code>src/routes/examples/notes/+page.svelte</code>. By the end, the textarea will have a live character counter, a limit indicator, and a dynamic page title.</p>
+
+    <!-- Exercise 1 -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 1</span>
+        <span class="exercise-title">Bind the textarea to $state and derive a character count</span>
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1rem;">Right now the textarea uses a one-way <code>value={form?.body ?? ''}</code>. Switch it to two-way binding via <code>$state</code>, then derive the count.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1a">
+        <label for="e1a">In the <code>&lt;script&gt;</code>, add these two variables after the existing <code>$props()</code> and <code>$state</code> lines:</label>
+      </div>
+      <pre><code><span class="kw">let</span> <span class="pr">body</span>      <span class="op">=</span> <span class="rune">$state</span>(<span class="pr">form</span>?.<span class="pr">body</span> <span class="op">??</span> <span class="str">''</span>);
+<span class="kw">let</span> <span class="pr">charCount</span>  <span class="op">=</span> <span class="rune">$derived</span>(<span class="pr">body</span>.<span class="pr">length</span>);
+<span class="kw">const</span> <span class="pr">LIMIT</span>    <span class="op">=</span> <span class="op">200</span>;
+<span class="kw">let</span> <span class="pr">isOverLimit</span> <span class="op">=</span> <span class="rune">$derived</span>(<span class="pr">charCount</span> <span class="op">></span> <span class="pr">LIMIT</span>);</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1b">
+        <label for="e1b">Change the textarea to use two-way binding: replace <code>value={form?.body ?? ""}</code> with <code>bind:value={body}</code></label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1c">
+        <label for="e1c">Below the textarea, add a character counter paragraph:</label>
+      </div>
+      <pre><code><span class="op">&lt;</span><span class="kw">p</span> <span class="pr">class</span><span class="op">=</span><span class="str">"char-count"</span> <span class="pr">class:over</span><span class="op">={</span><span class="pr">isOverLimit</span><span class="op">}&gt;</span>
+  <span class="op">{</span><span class="pr">charCount</span><span class="op">}</span> / <span class="op">{</span><span class="pr">LIMIT</span><span class="op">}</span>
+<span class="op">&lt;/</span><span class="kw">p</span><span class="op">&gt;</span></code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1d">
+        <label for="e1d">Add styles for <code>.char-count</code> and <code>.char-count.over</code> in the <code>&lt;style&gt;</code> block. Also disable the submit button when over limit: <code>disabled={isSubmitting || isOverLimit}</code></label>
+      </div>
+
+      <div class="verify-box">
+        <strong>✓ Verified when:</strong> Typing in the textarea shows a live "X / 200" counter. Typing past 200 chars turns the counter red and disables the submit button. Notice that <code>charCount</code> and <code>isOverLimit</code> update with zero extra code — <code>$derived</code> handles it.
+      </div>
+    </div>
+
+    <!-- Exercise 2 -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 2</span>
+        <span class="exercise-title">Use $effect to update the browser tab title</span>
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1rem;">A small but visible <code>$effect</code>: update <code>document.title</code> as the user types, and restore it when they clear the field.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2a">
+        <label for="e2a">Add this effect in the <code>&lt;script&gt;</code> block (after the other declarations):</label>
+      </div>
+      <pre><code><span class="rune">$effect</span>(() <span class="op">=></span> {
+  <span class="pr">document</span>.<span class="pr">title</span> <span class="op">=</span> <span class="pr">body</span>.<span class="pr">length</span> <span class="op">></span> <span class="op">0</span>
+    <span class="op">?</span> <span class="str">`Writing... (<span class="op">${</span><span class="pr">charCount</span><span class="op">}</span> chars)`</span>
+    <span class="op">:</span> <span class="str">'Notes'</span>;
+  <span class="kw">return</span> () <span class="op">=></span> { <span class="pr">document</span>.<span class="pr">title</span> <span class="op">=</span> <span class="str">'Notes'</span>; };
+});</code></pre>
+
+      <div class="verify-box">
+        <strong>✓ Verified when:</strong> Watch the browser tab as you type in the textarea — it updates live. Clear the textarea and the title resets to "Notes". This is a genuine side effect (touching the DOM outside Svelte's control) — exactly the right use case for <code>$effect</code>.
+      </div>
+    </div>
+
+    <!-- Exercise 3 -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 3</span>
+        <span class="exercise-title">Spot the anti-pattern and fix it</span>
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1rem;">This exercise trains the reflex. Read the bad code, understand why it's wrong, then write the fix.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3a">
+        <label for="e3a"><strong>Read this code</strong> — it works, but it's an anti-pattern:</label>
+      </div>
+      <pre><code><span class="kw">let</span> <span class="pr">items</span>    <span class="op">=</span> <span class="rune">$state</span>([<span class="str">'apple'</span>, <span class="str">'banana'</span>, <span class="str">'cherry'</span>]);
+<span class="kw">let</span> <span class="pr">filtered</span> <span class="op">=</span> <span class="rune">$state</span>(<span class="pr">items</span>);
+<span class="kw">let</span> <span class="pr">query</span>    <span class="op">=</span> <span class="rune">$state</span>(<span class="str">''</span>);
+
+<span class="rune">$effect</span>(() <span class="op">=></span> {
+  <span class="pr">filtered</span> <span class="op">=</span> <span class="pr">items</span>.<span class="fn">filter</span>(<span class="pr">i</span> <span class="op">=></span> <span class="pr">i</span>.<span class="fn">includes</span>(<span class="pr">query</span>));
+});</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3b">
+        <label for="e3b"><strong>Identify why it's wrong</strong> in your head: what rule does it break?</label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3c">
+        <label for="e3c"><strong>Write the fix</strong> (don't look below until you've tried):</label>
+      </div>
+      <pre><code><span class="kw">let</span> <span class="pr">items</span>    <span class="op">=</span> <span class="rune">$state</span>([<span class="str">'apple'</span>, <span class="str">'banana'</span>, <span class="str">'cherry'</span>]);
+<span class="kw">let</span> <span class="pr">query</span>    <span class="op">=</span> <span class="rune">$state</span>(<span class="str">''</span>);
+<span class="kw">let</span> <span class="pr">filtered</span> <span class="op">=</span> <span class="rune">$derived</span>.<span class="fn">by</span>(() <span class="op">=></span> <span class="pr">items</span>.<span class="fn">filter</span>(<span class="pr">i</span> <span class="op">=></span> <span class="pr">i</span>.<span class="fn">includes</span>(<span class="pr">query</span>)));
+
+<span class="cm">// No $effect needed. filtered updates automatically.</span></code></pre>
+
+      <div class="verify-box">
+        <strong>✓ The rule it breaks:</strong> <code>$effect</code> is being used to synchronize a derived value. <code>filtered</code> is fully calculable from <code>items</code> and <code>query</code> — it has no side effects and needs no state of its own. <code>$derived.by</code> eliminates the effect entirely, removes an extra <code>$state</code>, and is more efficient (lazy, cached, no extra renders).
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <h2>What You Learned</h2>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <h4>New Concepts</h4>
+      <ul>
+        <li><code>$state</code> — explicit reactive vars</li>
+        <li>Deep proxy reactivity (objects/arrays)</li>
+        <li>Destructuring gotcha</li>
+        <li><code>$derived</code> and <code>$derived.by</code></li>
+        <li><code>$effect</code> + cleanup return</li>
+        <li>$effect anti-pattern</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h4>Applied to your project</h4>
+      <ul>
+        <li>Notes textarea bound to <code>$state</code></li>
+        <li>Live character counter via <code>$derived</code></li>
+        <li>Over-limit detection via <code>$derived</code></li>
+        <li>Dynamic tab title via <code>$effect</code></li>
+        <li>Anti-pattern recognition practiced</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout note" style="margin-top:2rem;">
+    <div class="callout-title">What's next</div>
+    You now have routing, form actions, middleware, and reactivity. The final major gap is <strong>the server→component data flow</strong>: how does <code>locals.user</code> get into your Svelte layout so a nav bar can show "logged in as X"? That's the <code>+layout.server.ts</code> story — and it ties everything together.
+  </div>
+
+  <div class="callout teacher" style="margin-top:1.5rem;">
+    <div class="callout-title">Ask your teacher</div>
+    Good follow-up questions to explore with the agent:
+    <ul style="margin-top:0.5rem;padding-left:1.25rem;">
+      <li>How do I share <code>$state</code> between components that aren't parent/child?</li>
+      <li>What is <code>$state</code> in a <code>.svelte.ts</code> file — and how does that compare to Vue's composables?</li>
+      <li>When would I use <code>$effect.pre</code> instead of <code>$effect</code>?</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+  const answers = {};
+  const correct = { q1: 0, q2: 1, q3: 1, q4: 2, q5: 0, q6: 2 };
+
+  function answer(el, qid, isCorrect) {
+    if (answers[qid] !== undefined) return;
+    answers[qid] = isCorrect ? 1 : 0;
+    const options = el.closest('.question').querySelectorAll('.option');
+    options.forEach(o => o.classList.add('disabled'));
+    if (isCorrect) {
+      el.classList.add('correct');
+      document.getElementById(qid + '-correct').classList.add('show');
+    } else {
+      el.classList.add('wrong');
+      document.getElementById(qid + '-wrong').classList.add('show');
+      options[correct[qid]].classList.add('correct');
+      options[correct[qid]].classList.remove('disabled');
+    }
+  }
+
+  function showScore() {
+    const total = Object.keys(correct).length;
+    const score = Object.values(answers).reduce((a, b) => a + b, 0);
+    const unanswered = total - Object.keys(answers).length;
+    const pct = Math.round((score / total) * 100);
+    let msg = pct === 100 ? 'Perfect. The rune model is clear in your head — move straight to the exercises.'
+      : pct >= 80 ? 'Solid. Review the ones you missed, then do the exercises.'
+      : pct >= 60 ? 'Good start. Re-read the $effect anti-pattern section before the exercises.'
+      : 'Re-read the lesson, especially the "which rune" table, before coding.';
+    const el = document.getElementById('quiz-score');
+    el.innerHTML = `<div style="font-size:1.4rem;margin-bottom:0.4rem;">${score}/${total} &nbsp;(${pct}%)</div><div style="font-weight:400;color:var(--muted)">${msg}${unanswered ? ` (${unanswered} unanswered)` : ''}</div>`;
+    el.classList.add('show');
+  }
+</script>
+</body>
+</html>

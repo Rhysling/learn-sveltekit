@@ -14,17 +14,20 @@
 		<h2>Available example</h2>
 		<ul>
 			<li><a href="/examples/upload">Image upload example</a></li>
+			<li><a href="/examples/notes">Notes form example</a></li>
 		</ul>
 		<p class="placeholder">More examples are coming soon.</p>
 	</section>
 </div>
 
-<style>
+<style lang="scss">
+	$brand-100: #75dcff;
+
 	.card {
 		max-width: 680px;
 		margin: 2rem auto;
 		padding: 1.5rem;
-		border: 1px solid #ddd;
+		border: 2px solid $brand-100;
 		border-radius: 12px;
 		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
 	}
