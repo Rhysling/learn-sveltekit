@@ -1,9 +1,9 @@
 import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import type { AuthTokenPayload } from '$lib/types/auth';
+import { JWT_SECRET } from '$env/static/private';
 
-const secret = process.env.JWT_SECRET ?? 'dev-secret';
-const jwtSecret = new TextEncoder().encode(secret);
+const jwtSecret = new TextEncoder().encode(JWT_SECRET);
 
 export async function hashPassword(password: string) {
 	return bcrypt.hash(password, 10);

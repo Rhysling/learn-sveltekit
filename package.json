@@ -14,11 +14,12 @@
 		"generate": "prisma generate"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-node": "^3.0.0",
+		"@sveltejs/adapter-node": "^5.0.0",
 		"@sveltejs/kit": "^2.64.0",
 		"@types/bcryptjs": "^2.4.6",
-		"@types/node": "^20.0.0",
-		"prisma": "^5.15.0",
+		"@types/better-sqlite3": "^7.6.13",
+		"@types/node": "^25.0.0",
+		"prisma": "^7.8.0",
 		"sass": "^1.86.0",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.6.0",
@@ -26,8 +27,18 @@
 		"typescript": "^6.0.0"
 	},
 	"dependencies": {
-		"@prisma/client": "^5.15.0",
-		"bcryptjs": "^2.4.3",
-		"jose": "^5.1.0"
+		"@prisma/adapter-better-sqlite3": "^7.8.0",
+		"@prisma/client": "^7.0.0",
+		"bcryptjs": "^3.0.0",
+		"better-sqlite3": "^12.10.0",
+		"dotenv": "^17.4.2",
+		"jose": "^6.2.0"
+	},
+	"allowScripts": {
+		"@parcel/watcher@2.5.6": true,
+		"@prisma/engines@7.8.0": true,
+		"better-sqlite3@12.10.0": true,
+		"prisma@7.8.0": true,
+		"svelte-preprocess@6.0.5": true
 	}
 }
