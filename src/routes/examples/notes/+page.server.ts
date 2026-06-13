@@ -10,8 +10,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	// The 'default' action handles a plain POST to this page
-	default: async ({ request }) => {
+	add: async ({ request }) => {
 		const data = await request.formData();
 		const body = String(data.get('body') ?? '').trim();
 
@@ -21,8 +20,14 @@ export const actions: Actions = {
 		}
 
 		await prisma.note.create({ data: { body } });
+	},
 
-		// Returning nothing re-runs the load function automatically
+	delete: async ({ request }) => {
+		const data = await request.formData();
+		const id = Number(data.get('id'));
+
+		if (!id) return fail(400, { error: 'Invalid note id.' });
+
+		await prisma.note.delete({ where: { id } });
 	}
 };
-//{ data: { body } }

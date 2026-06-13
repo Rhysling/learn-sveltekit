@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 4: Layout Load Functions & Protected Routes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --orange: #ea580c;
+      --orange-light: #fff7ed;
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+      --code-prop: #f8c555;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+
+    /* ── Header ── */
+    .lesson-header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-tag {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+    .lesson-subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    /* ── Typography ── */
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 0.75rem;
+      padding-top: 0.5rem;
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      color: var(--accent);
+    }
+    p { margin-bottom: 1rem; }
+    ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: var(--accent); }
+    strong { font-weight: 600; }
+
+    /* ── Code blocks ── */
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      margin: 1rem 0 1.5rem;
+    }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.9em; }
+    p code, li code {
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+    .kw  { color: var(--code-keyword); }
+    .fn  { color: var(--code-fn); }
+    .str { color: var(--code-string); }
+    .cm  { color: var(--code-comment); font-style: italic; }
+    .ty  { color: var(--code-type); }
+    .op  { color: var(--code-op); }
+    .pr  { color: var(--code-prop); }
+
+    /* ── File tree ── */
+    .file-tree {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.9;
+      margin: 1rem 0 1.5rem;
+    }
+    .file-tree .dir   { color: #89ddff; }
+    .file-tree .file  { color: var(--code-text); }
+    .file-tree .new   { color: #c3e88d; font-weight: 600; }
+    .file-tree .note  { color: var(--code-comment); margin-left: 1rem; font-style: italic; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1.25rem 0;
+      border-left: 4px solid;
+    }
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+    .callout p:last-child { margin-bottom: 0; }
+    .callout.info    { background: var(--accent-light); border-color: var(--accent); }
+    .callout.info .callout-title { color: var(--accent); }
+    .callout.tip     { background: var(--green-light);  border-color: var(--green); }
+    .callout.tip .callout-title  { color: var(--green); }
+    .callout.warn    { background: var(--yellow-light); border-color: var(--yellow); }
+    .callout.warn .callout-title { color: var(--yellow); }
+    .callout.nuxt    { background: var(--teal-light);   border-color: var(--teal); }
+    .callout.nuxt .callout-title { color: var(--teal); }
+
+    /* ── Section divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+
+    /* ── Quiz ── */
+    .quiz-section { margin: 2.5rem 0; }
+    .quiz-section h2 { margin-top: 0; }
+    .question-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .question-text {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: var(--bg);
+      font-size: 0.95rem;
+      text-align: left;
+    }
+    .option:hover { border-color: var(--accent); background: var(--accent-light); }
+    .option.correct  { border-color: var(--green); background: var(--green-light); }
+    .option.wrong    { border-color: var(--red);   background: var(--red-light); }
+    .option.disabled { cursor: default; pointer-events: none; }
+    .option .marker  { width: 20px; height: 20px; border-radius: 50%; border: 2px solid currentColor; display: grid; place-items: center; flex-shrink: 0; margin-top: 2px; font-size: 0.7rem; font-weight: 700; }
+    .feedback {
+      margin-top: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .feedback.show { display: block; }
+    .feedback.correct { background: var(--green-light); color: var(--green); }
+    .feedback.wrong   { background: var(--red-light);   color: var(--red); }
+
+    /* ── Exercises ── */
+    .exercises-section { margin: 2.5rem 0; }
+    .exercise {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .exercise-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .exercise-number {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .exercise-title { font-weight: 700; font-size: 1rem; }
+    .exercise-done-btn {
+      margin-top: 1rem;
+      padding: 0.5rem 1.25rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .exercise-done-btn:hover { opacity: 0.85; }
+    .exercise-done-btn.done {
+      background: var(--green);
+      cursor: default;
+    }
+    .exercise p:last-of-type { margin-bottom: 0; }
+
+    /* ── Progress ── */
+    .progress-bar-wrap {
+      background: var(--border);
+      border-radius: 999px;
+      height: 6px;
+      margin: 0.75rem 0 0;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 0.35s;
+    }
+    .quiz-score {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    /* ── Footer ── */
+    .ask-footer {
+      margin-top: 3rem;
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      color: var(--accent);
+    }
+    .ask-footer strong { display: block; margin-bottom: 0.35rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header class="lesson-header">
+    <span class="lesson-tag">Lesson 4 · SvelteKit</span>
+    <h1>Layout Load Functions &amp;<br>Protected Routes</h1>
+    <p class="lesson-subtitle">DRY auth guards using <code>+layout.server.ts</code> and route groups — one redirect to rule them all.</p>
+  </header>
+
+  <!-- Section 1: The Problem -->
+  <h2>The problem with per-page auth checks</h2>
+
+  <p>You already protect <code>/admin</code> by checking <code>locals.user</code> in its <code>+page.server.ts</code>:</p>
+
+  <pre><span class="cm">// src/routes/admin/+page.server.ts — works, but doesn't scale</span>
+<span class="kw">export const</span> <span class="fn">load</span><span class="op">:</span> <span class="ty">PageServerLoad</span> <span class="op">=</span> <span class="kw">async</span> (<span class="op">{</span> locals <span class="op">}</span>) <span class="op">=&gt;</span> <span class="op">{</span>
+  <span class="kw">if</span> (<span class="op">!</span>locals<span class="op">.</span>user) <span class="kw">throw</span> <span class="fn">redirect</span>(<span class="pr">303</span>, <span class="str">'/'</span>)<span class="op">;</span>
+  <span class="cm">// ... rest of load</span>
+<span class="op">}</span></pre>
+
+  <p>This is fine for one page. Now imagine adding <code>/admin/users</code>, <code>/admin/settings</code>, <code>/admin/reports</code>. You'd copy that <code>if (!locals.user)</code> check into every single load function — a classic DRY violation.</p>
+
+  <p><strong>The fix:</strong> hoist the auth check to a <em>layout</em> that owns the entire protected section.</p>
+
+  <hr class="divider">
+
+  <!-- Section 2: Route Groups -->
+  <h2>Route groups — cosmetic directories</h2>
+
+  <p>SvelteKit lets you wrap any set of routes in a <strong>parenthesised directory</strong> like <code>(protected)</code>. The parentheses tell SvelteKit: <em>this folder exists for organisation only — don't include its name in the URL.</em></p>
+
+  <div class="file-tree">
+src/routes/<br>
+├── <span class="dir">(protected)/</span>        <span class="note">← parentheses = invisible to URL</span><br>
+│   ├── <span class="file new">+layout.server.ts</span> <span class="note">← auth guard lives here</span><br>
+│   ├── <span class="dir">dashboard/</span><br>
+│   │   └── <span class="file">+page.svelte</span>   <span class="note">← URL: /dashboard</span><br>
+│   └── <span class="dir">settings/</span><br>
+│       └── <span class="file">+page.svelte</span>   <span class="note">← URL: /settings</span><br>
+├── <span class="dir">admin/</span>              <span class="note">← URL: /admin (unprotected folder)</span><br>
+│   └── <span class="file">+page.server.ts</span><br>
+└── <span class="file">+page.svelte</span>       <span class="note">← URL: /</span>
+  </div>
+
+  <p>The URL for <code>(protected)/dashboard/+page.svelte</code> is simply <strong>/dashboard</strong> — the route group name is invisible. You can have multiple route groups at the same level (<code>(protected)</code>, <code>(public)</code>, <code>(marketing)</code>) to apply different layouts or guards to different sections.</p>
+
+  <div class="callout nuxt">
+    <div class="callout-title">Nuxt analogy</div>
+    <p>In Nuxt you'd write a route middleware in <code>middleware/auth.ts</code> and then apply it via <code>definePageMeta({ middleware: 'auth' })</code> on every protected page. In SvelteKit, <code>+layout.server.ts</code> in a route group is the middleware <em>and</em> its application in one file — no per-page annotation needed.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 3: +layout.server.ts -->
+  <h2>How <code>+layout.server.ts</code> works</h2>
+
+  <p>Every <code>+layout.server.ts</code> exports a <code>load</code> function. SvelteKit runs it <strong>before</strong> any child page's load function — and if it throws a <code>redirect()</code>, the child never runs at all.</p>
+
+  <pre><span class="cm">// src/routes/(protected)/+layout.server.ts</span>
+<span class="kw">import</span> <span class="op">{</span> redirect <span class="op">}</span> <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span><span class="op">;</span>
+<span class="kw">import type</span> <span class="op">{</span> LayoutServerLoad <span class="op">}</span> <span class="kw">from</span> <span class="str">'./$types'</span><span class="op">;</span>
+
+<span class="kw">export const</span> <span class="fn">load</span><span class="op">:</span> <span class="ty">LayoutServerLoad</span> <span class="op">=</span> <span class="kw">async</span> (<span class="op">{</span> locals <span class="op">}</span>) <span class="op">=&gt;</span> <span class="op">{</span>
+  <span class="kw">if</span> (<span class="op">!</span>locals<span class="op">.</span>user) <span class="op">{</span>
+    <span class="fn">redirect</span>(<span class="pr">302</span>, <span class="str">'/login'</span>)<span class="op">;</span>  <span class="cm">// halts everything, child never loads</span>
+  <span class="op">}</span>
+
+  <span class="kw">return</span> <span class="op">{</span>
+    user<span class="op">:</span> locals<span class="op">.</span>user   <span class="cm">// available in every child page via $page.data</span>
+  <span class="op">};</span>
+<span class="op">};</span></pre>
+
+  <div class="callout warn">
+    <div class="callout-title">throw vs return for redirect</div>
+    <p>In older SvelteKit you wrote <code>throw redirect(...)</code>. In recent versions <code>redirect()</code> is a thrown error internally, so both <code>throw redirect()</code> and just <code>redirect()</code> work. The convention is to omit <code>throw</code> in modern code — but either compiles fine. Your existing <code>/admin</code> code uses <code>throw redirect(303, '/')</code>, which is perfectly valid.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 4: Data inheritance -->
+  <h2>Data flows down — always</h2>
+
+  <p>Whatever a layout's <code>load</code> returns gets <strong>merged into <code>$page.data</code></strong> for every child page in its scope. You don't have to do anything special in the child — the data is just there.</p>
+
+  <pre><span class="cm">// src/routes/(protected)/dashboard/+page.svelte</span>
+<span class="kw">&lt;script</span> <span class="pr">lang</span><span class="op">=</span><span class="str">"ts"</span><span class="kw">&gt;</span>
+  <span class="kw">import type</span> <span class="op">{</span> PageProps <span class="op">}</span> <span class="kw">from</span> <span class="str">'./$types'</span><span class="op">;</span>
+  <span class="kw">let</span> <span class="op">{</span> data <span class="op">}:</span> <span class="ty">PageProps</span> <span class="op">=</span> <span class="fn">$props</span>()<span class="op">;</span>
+  <span class="cm">// data.user comes from the layout load — no extra fetch needed</span>
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="kw">&lt;h1&gt;</span>Welcome, {data.user.name}<span class="kw">&lt;/h1&gt;</span></pre>
+
+  <p>If the <em>page</em> also has a <code>+page.server.ts</code> that returns its own data (say, <code>posts</code>), both are merged: <code>data</code> will have both <code>user</code> (from layout) and <code>posts</code> (from page). No conflict unless you use the same key.</p>
+
+  <div class="callout info">
+    <div class="callout-title">The full execution order</div>
+    <p>For a request to <code>/dashboard</code> inside <code>(protected)</code>, SvelteKit runs:</p>
+    <ol style="margin-top: 0.5rem;">
+      <li><code>hooks.server.ts</code> → sets <code>locals.user</code></li>
+      <li><code>(protected)/+layout.server.ts</code> → checks <code>locals.user</code>, redirects or returns <code>{ user }</code></li>
+      <li><code>dashboard/+page.server.ts</code> → loads page-specific data</li>
+      <li>Both data objects merged → available in <code>+page.svelte</code> as <code>data</code></li>
+    </ol>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 5: Layout svelte companion -->
+  <h2>The layout component (optional)</h2>
+
+  <p>A route group can also have a <code>+layout.svelte</code> to wrap all child pages in shared UI — a sidebar, a nav bar, an admin chrome. You don't <em>have</em> to — a <code>+layout.server.ts</code> without a matching <code>+layout.svelte</code> is perfectly valid, just running server logic.</p>
+
+  <pre><span class="cm">&lt;!-- src/routes/(protected)/+layout.svelte --&gt;</span>
+<span class="kw">&lt;script</span> <span class="pr">lang</span><span class="op">=</span><span class="str">"ts"</span><span class="kw">&gt;</span>
+  <span class="kw">import type</span> <span class="op">{</span> LayoutProps <span class="op">}</span> <span class="kw">from</span> <span class="str">'./$types'</span><span class="op">;</span>
+  <span class="kw">let</span> <span class="op">{</span> data, children <span class="op">}:</span> <span class="ty">LayoutProps</span> <span class="op">=</span> <span class="fn">$props</span>()<span class="op">;</span>
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="kw">&lt;nav&gt;</span>Logged in as {data.user.name}<span class="kw">&lt;/nav&gt;</span>
+{@render children()}  <span class="cm">&lt;!-- renders the child page --&gt;</span></pre>
+
+  <p><code>{@render children()}</code> is the Svelte 5 way to render child content — equivalent to <code>&lt;slot /&gt;</code> in Svelte 4 / Vue.</p>
+
+  <hr class="divider">
+
+  <!-- Quiz -->
+  <section class="quiz-section">
+    <h2>Quick check</h2>
+    <p>Five questions. Pick one — feedback is immediate.</p>
+
+    <div class="progress-bar-wrap"><div class="progress-bar" id="quiz-progress" style="width:0%"></div></div>
+    <p class="quiz-score" id="quiz-score">0 / 5 answered</p>
+
+    <!-- Q1 -->
+    <div class="question-block" id="q1">
+      <p class="question-text">1. You have <code>src/routes/(admin)/users/+page.svelte</code>. What is the URL?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q1',false)"><span class="marker">A</span>/admin/users</button>
+        <button class="option" onclick="answer(this,'q1',true)"><span class="marker">B</span>/users</button>
+        <button class="option" onclick="answer(this,'q1',false)"><span class="marker">C</span>/(admin)/users</button>
+        <button class="option" onclick="answer(this,'q1',false)"><span class="marker">D</span>/admin-users</button>
+      </div>
+      <div class="feedback" id="q1-fb"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-block" id="q2">
+      <p class="question-text">2. In what order does SvelteKit run load functions for a nested route?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q2',false)"><span class="marker">A</span>Page load → layout load → hooks</button>
+        <button class="option" onclick="answer(this,'q2',false)"><span class="marker">B</span>Layout load → hooks → page load</button>
+        <button class="option" onclick="answer(this,'q2',true)"><span class="marker">C</span>Hooks → layout load → page load</button>
+        <button class="option" onclick="answer(this,'q2',false)"><span class="marker">D</span>All run in parallel</button>
+      </div>
+      <div class="feedback" id="q2-fb"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question-block" id="q3">
+      <p class="question-text">3. A layout load returns <code>{ user }</code>. A child page load returns <code>{ posts }</code>. What does the child component's <code>data</code> prop contain?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q3',false)"><span class="marker">A</span>Only <code>{ posts }</code> — child data overwrites layout data</button>
+        <button class="option" onclick="answer(this,'q3',true)"><span class="marker">B</span><code>{ user, posts }</code> — they are merged</button>
+        <button class="option" onclick="answer(this,'q3',false)"><span class="marker">C</span>Only <code>{ user }</code> — layout data takes priority</button>
+        <button class="option" onclick="answer(this,'q3',false)"><span class="marker">D</span>A nested object like <code>{ layout: { user }, page: { posts } }</code></button>
+      </div>
+      <div class="feedback" id="q3-fb"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question-block" id="q4">
+      <p class="question-text">4. You call <code>redirect(302, '/login')</code> inside a layout load. What happens to the child page's load function?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q4',false)"><span class="marker">A</span>It still runs but its data is ignored</button>
+        <button class="option" onclick="answer(this,'q4',true)"><span class="marker">B</span>It never runs — the redirect fires immediately</button>
+        <button class="option" onclick="answer(this,'q4',false)"><span class="marker">C</span>It runs in parallel and may cause a race condition</button>
+        <button class="option" onclick="answer(this,'q4',false)"><span class="marker">D</span>It runs and the redirect only applies to the layout component</button>
+      </div>
+      <div class="feedback" id="q4-fb"></div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question-block" id="q5">
+      <p class="question-text">5. You want <code>/dashboard</code> and <code>/settings</code> protected, but <code>/about</code> public. What is the minimal change?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q5',false)"><span class="marker">A</span>Add the auth check to the root <code>+layout.server.ts</code> with a URL allowlist</button>
+        <button class="option" onclick="answer(this,'q5',true)"><span class="marker">B</span>Put dashboard and settings inside a <code>(protected)</code> group with one <code>+layout.server.ts</code></button>
+        <button class="option" onclick="answer(this,'q5',false)"><span class="marker">C</span>Add the auth check to each page's individual load function</button>
+        <button class="option" onclick="answer(this,'q5',false)"><span class="marker">D</span>Use <code>hooks.server.ts</code> to block the routes by URL pattern</button>
+      </div>
+      <div class="feedback" id="q5-fb"></div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Exercises -->
+  <section class="exercises-section">
+    <h2>Hands-on exercises</h2>
+    <p>Three steps. Apply the pattern in your real project.</p>
+
+    <!-- Exercise 1 -->
+    <div class="exercise" id="ex1">
+      <div class="exercise-header">
+        <div class="exercise-number">1</div>
+        <div class="exercise-title">Create the route group and layout load</div>
+      </div>
+      <p>Create the directory <code>src/routes/(protected)/</code> and add <code>+layout.server.ts</code> inside it:</p>
+      <pre><span class="cm">// src/routes/(protected)/+layout.server.ts</span>
+<span class="kw">import</span> <span class="op">{</span> redirect <span class="op">}</span> <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span><span class="op">;</span>
+<span class="kw">import type</span> <span class="op">{</span> LayoutServerLoad <span class="op">}</span> <span class="kw">from</span> <span class="str">'./$types'</span><span class="op">;</span>
+
+<span class="kw">export const</span> <span class="fn">load</span><span class="op">:</span> <span class="ty">LayoutServerLoad</span> <span class="op">=</span> <span class="kw">async</span> (<span class="op">{</span> locals <span class="op">}</span>) <span class="op">=&gt;</span> <span class="op">{</span>
+  <span class="kw">if</span> (<span class="op">!</span>locals<span class="op">.</span>user) <span class="op">{</span>
+    <span class="fn">redirect</span>(<span class="pr">302</span>, <span class="str">'/'</span>)<span class="op">;</span>
+  <span class="op">}</span>
+  <span class="kw">return</span> <span class="op">{</span> user<span class="op">:</span> locals<span class="op">.</span>user <span class="op">};</span>
+<span class="op">};</span></pre>
+      <p>This single file now guards every route you put inside <code>(protected)/</code>.</p>
+      <button class="exercise-done-btn" onclick="markDone('ex1',this)">Mark done</button>
+    </div>
+
+    <!-- Exercise 2 -->
+    <div class="exercise" id="ex2">
+      <div class="exercise-header">
+        <div class="exercise-number">2</div>
+        <div class="exercise-title">Create a protected dashboard page</div>
+      </div>
+      <p>Create <code>src/routes/(protected)/dashboard/+page.svelte</code>. This page's URL will be <code>/dashboard</code>:</p>
+      <pre><span class="cm">&lt;!-- src/routes/(protected)/dashboard/+page.svelte --&gt;</span>
+<span class="kw">&lt;script</span> <span class="pr">lang</span><span class="op">=</span><span class="str">"ts"</span><span class="kw">&gt;</span>
+  <span class="kw">import type</span> <span class="op">{</span> PageProps <span class="op">}</span> <span class="kw">from</span> <span class="str">'./$types'</span><span class="op">;</span>
+  <span class="kw">let</span> <span class="op">{</span> data <span class="op">}:</span> <span class="ty">PageProps</span> <span class="op">=</span> <span class="fn">$props</span>()<span class="op">;</span>
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="kw">&lt;h1&gt;</span>Dashboard<span class="kw">&lt;/h1&gt;</span>
+<span class="kw">&lt;p&gt;</span>Welcome back, {data.user.name}!<span class="kw">&lt;/p&gt;</span>
+<span class="kw">&lt;p&gt;</span>Logged in as: {data.user.email}<span class="kw">&lt;/p&gt;</span></pre>
+      <p>Notice: no auth check in <em>this</em> file. The layout handles it. The <code>data.user</code> is available because the layout load returned it.</p>
+      <button class="exercise-done-btn" onclick="markDone('ex2',this)">Mark done</button>
+    </div>
+
+    <!-- Exercise 3 -->
+    <div class="exercise" id="ex3">
+      <div class="exercise-header">
+        <div class="exercise-number">3</div>
+        <div class="exercise-title">Test both logged-in and logged-out states</div>
+      </div>
+      <p><strong>Logged out:</strong> Visit <code>http://localhost:5173/dashboard</code> without logging in. You should be redirected to <code>/</code>.</p>
+      <p><strong>Logged in:</strong> Log in via your existing auth flow, then visit <code>/dashboard</code>. You should see your name and email rendered by the page.</p>
+      <p>Check your terminal for any server errors if something unexpected happens — remember, <code>console.log</code> in server files only appears there, not in the browser.</p>
+      <p style="margin-top: 0.75rem;"><strong>Bonus:</strong> Add a second page at <code>(protected)/profile/+page.svelte</code> that also shows <code>data.user</code>. Confirm it's also protected — no extra auth code needed in that file.</p>
+      <button class="exercise-done-btn" onclick="markDone('ex3',this)">Mark done</button>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Summary -->
+  <h2>What you now know</h2>
+  <ul>
+    <li><strong>Route groups</strong> (<code>(name)/</code>) organise routes without changing URLs</li>
+    <li><strong><code>+layout.server.ts</code></strong> runs before child pages — it can redirect, and its return value is merged into child <code>data</code></li>
+    <li>One redirect in a layout = every route in that group is protected — no repetition</li>
+    <li>Data inheritance is automatic — layout data is always available in child <code>data</code></li>
+    <li>The execution chain: <strong>hooks → layout load → page load</strong></li>
+  </ul>
+
+  <!-- Ask footer -->
+  <div class="ask-footer">
+    <strong>Questions? Ask your teacher.</strong>
+    Anything unclear — why redirect() halts the chain, how multiple nested layouts stack, how to type <code>data.user</code> without redeclaring it in every page — ask in the chat. That's what the teacher is here for.
+  </div>
+
+</div>
+
+<script>
+  const feedbackText = {
+    q1: {
+      correct: 'Correct. The parentheses are invisible to the URL — route group names are stripped out entirely.',
+      wrong: 'Not quite. SvelteKit strips the parenthesised folder name from the URL. (admin)/ is not included.'
+    },
+    q2: {
+      correct: 'Correct. Hooks run first on every request, then layouts (outer to inner), then the page itself.',
+      wrong: 'Not quite. The order is: hooks.server.ts → layout load(s) from outermost to innermost → page load.'
+    },
+    q3: {
+      correct: 'Correct. SvelteKit deep-merges layout and page data. Both are available on the single `data` prop.',
+      wrong: 'Not quite. SvelteKit merges layout and page data into one flat object. The child gets both `user` and `posts`.'
+    },
+    q4: {
+      correct: 'Correct. A redirect() in a layout load is like throwing an exception — execution stops immediately.',
+      wrong: 'Not quite. redirect() halts the entire load chain. The child page load never executes.'
+    },
+    q5: {
+      correct: 'Correct. Route groups are made for exactly this — one layout guards all routes inside the group, leaving others untouched.',
+      wrong: 'Not quite. Route groups are the cleanest solution. A URL allowlist in root layout or per-page checks are both more fragile and verbose.'
+    }
+  };
+
+  const answered = {};
+
+  function answer(btn, qid, isCorrect) {
+    if (answered[qid]) return;
+    answered[qid] = true;
+
+    const block = document.getElementById(qid);
+    block.querySelectorAll('.option').forEach(o => o.classList.add('disabled'));
+
+    btn.classList.add(isCorrect ? 'correct' : 'wrong');
+
+    const fb = document.getElementById(qid + '-fb');
+    fb.textContent = isCorrect ? '✓ ' + feedbackText[qid].correct : '✗ ' + feedbackText[qid].wrong;
+    fb.className = 'feedback show ' + (isCorrect ? 'correct' : 'wrong');
+
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const total = 5;
+    const done = Object.keys(answered).length;
+    document.getElementById('quiz-progress').style.width = (done / total * 100) + '%';
+    document.getElementById('quiz-score').textContent = done + ' / ' + total + ' answered';
+  }
+
+  function markDone(id, btn) {
+    btn.textContent = '✓ Done';
+    btn.classList.add('done');
+  }
+</script>
+</body>
+</html>
