@@ -15,6 +15,7 @@
 		<ul>
 			<li><a href="/examples/upload">Image upload example</a></li>
 			<li><a href="/examples/notes">Notes form example</a></li>
+			<li><a href="/dashboard">A protected dashboard</a></li>
 		</ul>
 		<p class="placeholder">More examples are coming soon.</p>
 	</section>
