@@ -8,56 +8,73 @@ import crypto from 'crypto';
 const allowedExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
 
 async function requireAuth(cookies: Cookies) {
-  const token = cookies.get('token');
-  if (!token) {
-    return null;
-  }
+	const token = cookies.get('token');
+	if (!token) {
+		return null;
+	}
 
-  return verifyToken(token);
+	return verifyToken(token);
 }
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
-  const user = await requireAuth(cookies);
-  if (!user) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
-  }
+	const user = await requireAuth(cookies);
+	if (!user) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
-  const files = await listImages();
-  const images = files.map((filename) => ({
-    filename,
-    url: `${url.origin}/images/${encodeURIComponent(filename)}`
-  }));
+	const files = await listImages();
+	const images = files.map((filename) => ({
+		filename,
+		url: `${url.origin}/images/${encodeURIComponent(filename)}`
+	}));
 
-  return json({ images });
+	return json({ images });
 };
 
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
-  const user = await requireAuth(cookies);
-  if (!user) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
-  }
+	const user = await requireAuth(cookies);
+	if (!user) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
-  const form = await request.formData();
-  const file = form.get('image');
+	const form = await request.formData();
+	const file = form.get('image');
 
-  if (!file || typeof (file as File).name !== 'string' || typeof (file as File).arrayBuffer !== 'function') {
-    return json({ error: 'A valid image file is required.' }, { status: 400 });
-  }
+	if (!file || typeof (file as File).name !== 'string' || typeof (file as File).arrayBuffer !== 'function') {
+		return json({ error: 'A valid image file is required.' }, { status: 400 });
+	}
 
-  const uploaded = file as File;
-  const originalName = path.basename(uploaded.name);
-  const extension = path.extname(originalName).toLowerCase();
+	const uploaded = file as File;
+	const originalName = path.basename(uploaded.name);
+	const extension = path.extname(originalName).toLowerCase();
 
-  if (!allowedExtensions.has(extension)) {
-    return json({ error: 'Only PNG, JPG, JPEG, GIF and WEBP images are allowed.' }, { status: 400 });
-  }
+	if (!allowedExtensions.has(extension)) {
+		return json({ error: 'Only PNG, JPG, JPEG, GIF and WEBP images are allowed.' }, { status: 400 });
+	}
 
-  const safeName = originalName.replace(/\s+/g, '-');
-  const filename = `${crypto.randomUUID()}-${safeName}`;
-  const destination = getImagePath(filename);
+	const safeName = originalName.replace(/\s+/g, '-');
+	const filename = `${crypto.randomUUID()}-${safeName}`;
+	const destination = getImagePath(filename);
 
-  await ensureStorage();
-  await fs.writeFile(destination, Buffer.from(await uploaded.arrayBuffer()));
+	await ensureStorage();
+	await fs.writeFile(destination, Buffer.from(await uploaded.arrayBuffer()));
 
-  return json({ message: 'Image uploaded.', filename, url: `${url.origin}/images/${encodeURIComponent(filename)}` });
+	return json({ message: 'Image uploaded.', filename, url: `${url.origin}/images/${encodeURIComponent(filename)}` });
+};
+
+export const DELETE: RequestHandler = async ({ request, cookies }) => {
+	const user = await requireAuth(cookies);
+	if (!user) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
+	const form = await request.formData();
+	const filename = form.get('filename') as string;
+
+	const destination = getImagePath(filename);
+
+	await ensureStorage();
+	await fs.rm(destination);
+
+	return json({ message: 'Image deleted.', filename });
 };

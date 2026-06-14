@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 6: invalidate — On-Demand Data Refresh</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+      --code-prop: #f8c555;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+
+    .lesson-header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-tag {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+    .lesson-subtitle { color: var(--muted); font-size: 1.05rem; }
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      color: var(--text);
+    }
+    p { margin-bottom: 1rem; }
+    ul, ol { margin: 0 0 1rem 1.5rem; }
+    li { margin-bottom: 0.4rem; }
+
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: #f0f0f8;
+      color: #4b4b8f;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-size: 0.875em;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1.25rem 1.5rem;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin: 1rem 0 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    pre .kw  { color: var(--code-keyword); }
+    pre .str { color: var(--code-string); }
+    pre .fn  { color: var(--code-fn); }
+    pre .cm  { color: var(--code-comment); font-style: italic; }
+    pre .ty  { color: var(--code-type); }
+    pre .op  { color: var(--code-op); }
+    pre .pr  { color: var(--code-prop); }
+    pre .num { color: #f78c6c; }
+
+    .callout {
+      border-left: 4px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.25rem 0;
+    }
+    .callout.info { border-color: var(--accent); background: var(--accent-light); }
+    .callout.tip  { border-color: var(--green);  background: var(--green-light); }
+    .callout.warn { border-color: var(--yellow); background: var(--yellow-light); }
+    .callout.nuxt { border-color: var(--teal);  background: var(--teal-light); }
+    .callout-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+      opacity: 0.7;
+    }
+
+    .diagram {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1.25rem 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.8;
+    }
+    .diagram .arrow { color: var(--accent); font-weight: 700; }
+    .diagram .label { color: var(--muted); font-size: 0.78rem; }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+    @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } }
+    .compare-block { border: 2px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .compare-block.bad  { border-color: var(--red); }
+    .compare-block.good { border-color: var(--green); }
+    .compare-header {
+      padding: 0.5rem 1rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .compare-block.bad  .compare-header { background: var(--red-light);   color: var(--red); }
+    .compare-block.good .compare-header { background: var(--green-light); color: var(--green); }
+    .compare-block pre { border-radius: 0; margin: 0; font-size: 0.8rem; }
+
+    /* ── Quiz ── */
+    .quiz-section {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+    }
+    .quiz-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .quiz-q { margin-bottom: 1.5rem; }
+    .quiz-q p { font-weight: 600; margin-bottom: 0.75rem; }
+    .quiz-options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .quiz-opt {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      background: var(--surface);
+      text-align: left;
+      font-size: 0.95rem;
+      transition: border-color 0.15s, background 0.15s;
+      width: 100%;
+    }
+    .quiz-opt:hover { border-color: var(--accent); background: var(--accent-light); }
+    .quiz-opt.correct { border-color: var(--green) !important; background: var(--green-light) !important; }
+    .quiz-opt.wrong   { border-color: var(--red)   !important; background: var(--red-light)   !important; opacity: 0.7; }
+    .quiz-opt .mark { font-size: 1.1rem; min-width: 1.2rem; }
+    .quiz-feedback {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      padding: 0.75rem 1rem;
+      background: var(--bg);
+      border-radius: 8px;
+      display: none;
+    }
+    .quiz-feedback.show { display: block; }
+    .quiz-score {
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--accent-light);
+      color: var(--accent);
+      display: none;
+      margin-top: 1rem;
+    }
+    .quiz-score.show { display: block; }
+
+    /* ── Exercise ── */
+    .exercise {
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+    }
+    .exercise-header {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .exercise h3 { font-size: 1.15rem; margin-top: 0; }
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+    .step-num {
+      width: 2rem;
+      height: 2rem;
+      min-width: 2rem;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body p { margin-bottom: 0.5rem; }
+
+    .checklist { list-style: none; margin-left: 0; }
+    .checklist li { padding-left: 1.75rem; position: relative; }
+    .checklist li::before {
+      content: '☐';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-size: 1rem;
+    }
+
+    .tip-box {
+      background: var(--teal-light);
+      border: 1.5px solid var(--teal);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      margin: 0.75rem 0;
+      color: #0f5e58;
+    }
+
+    .footer-note {
+      margin-top: 3rem;
+      padding: 1.25rem;
+      background: var(--accent-light);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: var(--accent);
+      text-align: center;
+    }
+    .citation { font-size: 0.78rem; color: var(--muted); }
+    .citation a { color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header class="lesson-header">
+    <div class="lesson-tag">Lesson 6 · SvelteKit</div>
+    <h1><code>invalidate</code> — On-Demand Data Refresh</h1>
+    <p class="lesson-subtitle">Stop manually managing state with <code>onMount + fetch</code>. Let SvelteKit re-run your load functions when you need fresh data.</p>
+  </header>
+
+  <!-- ── Section 1: The Problem ── -->
+  <h2>The problem: load functions only run on navigation</h2>
+
+  <p>SvelteKit load functions are brilliant — they run on the server, prepare data for the page, and the component just reads <code>data.whatever</code>. But they run at a specific moment: <strong>when the user navigates to the route.</strong></p>
+
+  <p>So what happens after you mutate data client-side — say, upload a file via <code>fetch</code> — and you want the page list to refresh? The load function doesn't re-run automatically. You need to tell SvelteKit to re-run it.</p>
+
+  <p>If you've worked with Nuxt, you've hit this with <code>useAsyncData</code> — you call <code>refreshNuxtData('key')</code> after a mutation. SvelteKit's equivalent is <code>invalidate()</code>.</p>
+
+  <div class="callout info">
+    <div class="callout-label">Key idea</div>
+    <strong><code>invalidate(url)</code></strong> tells SvelteKit: "re-run any load function that fetched this URL." The page data updates reactively — no manual state, no <code>onMount</code>.
+  </div>
+
+  <!-- ── Section 2: How SvelteKit tracks dependencies ── -->
+  <h2>How SvelteKit tracks what a load function depends on</h2>
+
+  <p>This is the clever part. When SvelteKit runs a server load function, it gives that function a <strong>special, instrumented <code>fetch</code></strong> — not the raw browser <code>fetch</code>, but one SvelteKit controls. Every URL you call inside that load function is recorded as a <em>dependency</em>.</p>
+
+  <div class="diagram">
+    <div>load(<span class="arrow">{ fetch }</span>) {                          <span class="label">← special fetch, not browser fetch</span></div>
+    <div>  <span class="arrow">const res = await fetch('/api/images');</span>  <span class="label">← SvelteKit records this URL</span></div>
+    <div>  return { images };                          <span class="label">← dependency: '/api/images'</span></div>
+    <div>}</div>
+    <div>&nbsp;</div>
+    <div>Client: <span class="arrow">await invalidate('/api/images')</span>   <span class="label">← SvelteKit re-runs the load above</span></div>
+  </div>
+
+  <p>This means <strong>you don't need to name your data with a key</strong> (like Nuxt's <code>useAsyncData('key', fn)</code>). The URL <em>is</em> the key. If your load function fetched that URL, SvelteKit knows to re-run it.</p>
+
+  <p class="citation">Source: <a href="https://kit.svelte.dev/docs/load#rerunning-load-functions-manual-invalidation" target="_blank">SvelteKit docs — Manual invalidation</a></p>
+
+  <!-- ── Section 3: The API ── -->
+  <h2>The API</h2>
+
+  <h3><code>invalidate(url)</code> — targeted refresh</h3>
+  <p>Re-runs any load function (on the current page) that fetched the given URL. Everything else stays untouched.</p>
+
+<pre><span class="kw">import</span> { <span class="fn">invalidate</span> } <span class="kw">from</span> <span class="str">'$app/navigation'</span>;
+
+<span class="cm">// After uploading an image:</span>
+<span class="kw">await</span> <span class="fn">invalidate</span>(<span class="str">'/api/images'</span>);
+<span class="cm">// SvelteKit re-runs any load that fetched '/api/images'</span>
+<span class="cm">// The page's `data.images` updates automatically.</span></pre>
+
+  <h3><code>invalidateAll()</code> — nuclear option</h3>
+  <p>Re-runs <em>all</em> load functions for the current page. Useful when you're not sure which URL to target, or when multiple things changed at once.</p>
+
+<pre><span class="kw">import</span> { <span class="fn">invalidateAll</span> } <span class="kw">from</span> <span class="str">'$app/navigation'</span>;
+
+<span class="kw">await</span> <span class="fn">invalidateAll</span>();  <span class="cm">// re-runs every load function on this page</span></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Watch out</div>
+    <code>invalidateAll()</code> re-runs <em>layout</em> load functions too, not just the page load. On a page with several layout loads, this causes extra server work. Prefer <code>invalidate(url)</code> when you know the URL.
+  </div>
+
+  <h3>Custom invalidation keys</h3>
+  <p>You can also invalidate on a custom string key instead of a URL. In the load function, call <code>depends('myapp:images')</code> to register the dependency. Then <code>invalidate('myapp:images')</code> to trigger it.</p>
+
+<pre><span class="cm">// +page.server.ts</span>
+<span class="kw">export const</span> <span class="fn">load</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">fetch</span>, <span class="pr">depends</span> }) <span class="op">=></span> {
+  <span class="fn">depends</span>(<span class="str">'myapp:images'</span>);          <span class="cm">← register a custom dependency key</span>
+  <span class="kw">const</span> res <span class="op">=</span> <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'/api/images'</span>);
+  <span class="kw">const</span> { images } <span class="op">=</span> <span class="kw">await</span> res.<span class="fn">json</span>();
+  <span class="kw">return</span> { images };
+};
+
+<span class="cm">// +page.svelte</span>
+<span class="kw">await</span> <span class="fn">invalidate</span>(<span class="str">'myapp:images'</span>);   <span class="cm">← trigger by key, not URL</span></pre>
+
+  <p>Custom keys are useful when the URL is unpredictable or when you want the dependency to be explicit and named, not tied to an API path.</p>
+
+  <p class="citation">Source: <a href="https://kit.svelte.dev/docs/load#rerunning-load-functions-when-do-load-functions-rerun" target="_blank">SvelteKit docs — When do load functions rerun?</a></p>
+
+  <!-- ── Section 4: Before / After ── -->
+  <h2>Before and after: the admin image gallery</h2>
+
+  <p>Your current admin page uses <code>onMount + fetch + manual state</code> for the image gallery. Here's how that pattern compares to the SvelteKit-native approach.</p>
+
+  <div class="compare">
+    <div class="compare-block bad">
+      <div class="compare-header">Before — manual fetch + state</div>
+<pre><span class="cm">// +page.svelte (no load function for images)</span>
+
+<span class="kw">let</span> images = <span class="fn">$state</span>([]);
+
+<span class="fn">onMount</span>(<span class="kw">async</span> () <span class="op">=></span> {
+  <span class="kw">await</span> <span class="fn">fetchImages</span>();
+});
+
+<span class="kw">async function</span> <span class="fn">fetchImages</span>() {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'/api/images'</span>);
+  <span class="kw">const</span> d = <span class="kw">await</span> res.<span class="fn">json</span>();
+  images = d.images ?? [];
+}
+
+<span class="kw">async function</span> <span class="fn">uploadImage</span>() {
+  <span class="cm">// ... upload ...</span>
+  <span class="kw">await</span> <span class="fn">fetchImages</span>(); <span class="cm">← manual re-fetch</span>
+}</pre>
+    </div>
+    <div class="compare-block good">
+      <div class="compare-header">After — load function + invalidate</div>
+<pre><span class="cm">// +page.server.ts</span>
+<span class="kw">export const</span> <span class="fn">load</span> = <span class="kw">async</span> ({ fetch, locals }) <span class="op">=></span> {
+  <span class="cm">// ... auth check ...</span>
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'/api/images'</span>);
+  <span class="kw">const</span> { images } = <span class="kw">await</span> res.<span class="fn">json</span>();
+  <span class="kw">return</span> { user, images };
+};
+
+<span class="cm">// +page.svelte</span>
+<span class="kw">import</span> { <span class="fn">invalidate</span> } <span class="kw">from</span> <span class="str">'$app/navigation'</span>;
+<span class="kw">let</span> { data } = <span class="fn">$props</span>();
+<span class="cm">// data.images comes from the load function</span>
+
+<span class="kw">async function</span> <span class="fn">uploadImage</span>() {
+  <span class="cm">// ... upload ...</span>
+  <span class="kw">await</span> <span class="fn">invalidate</span>(<span class="str">'/api/images'</span>); <span class="cm">← done</span>
+}</pre>
+    </div>
+  </div>
+
+  <p>The "after" version has no local image state, no <code>onMount</code>, and no manual tracking of whether images are loaded. The load function owns the data; <code>invalidate</code> refreshes it.</p>
+
+  <div class="callout nuxt">
+    <div class="callout-label">Nuxt comparison</div>
+    In Nuxt you'd use <code>const { data } = useAsyncData('images', () => $fetch('/api/images'))</code> and call <code>refreshNuxtData('images')</code> after upload. SvelteKit's equivalent is a server load function using its instrumented <code>fetch</code>, then <code>invalidate('/api/images')</code>. The Nuxt approach requires a string key; SvelteKit uses the URL itself as the key — less ceremony.
+  </div>
+
+  <!-- ── Quiz ── -->
+  <div class="quiz-section">
+    <div class="quiz-title">Quick check — 3 questions</div>
+
+    <!-- Q1 -->
+    <div class="quiz-q" data-q="1">
+      <p>1. Why doesn't a SvelteKit load function re-run automatically after you upload a file via <code>fetch</code>?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-correct="false" onclick="answer(this)">
+          <span class="mark"></span>
+          SvelteKit can't detect mutations made inside <code>&lt;script&gt;</code> blocks.
+        </button>
+        <button class="quiz-opt" data-correct="false" onclick="answer(this)">
+          <span class="mark"></span>
+          The upload runs on the server, so the client doesn't know it happened.
+        </button>
+        <button class="quiz-opt" data-correct="true" onclick="answer(this)">
+          <span class="mark"></span>
+          Load functions only re-run on navigation — not on client-side mutations — unless you explicitly invalidate.
+        </button>
+        <button class="quiz-opt" data-correct="false" onclick="answer(this)">
+          <span class="mark"></span>
+          You need to call <code>goto()</code> to trigger a re-run.
+        </button>
+      </div>
+      <div class="quiz-feedback">
+        Load functions run when you navigate to a page, and again when SvelteKit is told to re-run them (via invalidation or navigation). A raw <code>fetch</code> in a component doesn't trigger either — the load function has no idea you made a request from the component.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-q" data-q="2">
+      <p>2. Your load function calls <code>fetch('/api/users')</code> and <code>fetch('/api/posts')</code>. You call <code>invalidate('/api/users')</code>. What happens?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-correct="false" onclick="answer(this)">
+          <span class="mark"></span>
+          Both <code>/api/users</code> and <code>/api/posts</code> are re-fetched.
+        </button>
+        <button class="quiz-opt" data-correct="true" onclick="answer(this)">
+          <span class="mark"></span>
+          The load function re-runs, which re-fetches both URLs since they're in the same function.
+        </button>
+        <button class="quiz-opt" data-correct="false" onclick="answer(this)">
+          <span class="mark"></span>
+          Only the <code>/api/users</code> fetch is repeated; <code>/api/posts</code> data is cached.
+        </button>
+        <button class="quiz-opt" data-correct="false" onclick="answer(this)">
+          <span class="mark"></span>
+          Nothing happens because the load function already ran on page load.
+        </button>
+      </div>
+      <div class="quiz-feedback">
+        Invalidation is per-load-function, not per-URL. When SvelteKit decides a load function needs to re-run, it runs the whole function from scratch — all its <code>fetch</code> calls execute again. If you needed to separate them, you'd split into two load functions (one in the layout, one in the page).
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-q" data-q="3">
+      <p>3. When would you prefer <code>depends('myapp:images')</code> + <code>invalidate('myapp:images')</code> over URL-based invalidation?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-correct="false" onclick="answer(this)">
+          <span class="mark"></span>
+          When you want to invalidate layout load functions, not page load functions.
+        </button>
+        <button class="quiz-opt" data-correct="true" onclick="answer(this)">
+          <span class="mark"></span>
+          When the data comes from a database query (not a fetch), or when you want an explicit, stable name for the dependency.
+        </button>
+        <button class="quiz-opt" data-correct="false" onclick="answer(this)">
+          <span class="mark"></span>
+          <code>depends()</code> is faster because it skips the URL matching step.
+        </button>
+        <button class="quiz-opt" data-correct="false" onclick="answer(this)">
+          <span class="mark"></span>
+          You always need to use <code>depends()</code> — URL-based invalidation only works in client-side components.
+        </button>
+      </div>
+      <div class="quiz-feedback">
+        SvelteKit can only track dependency URLs automatically when the load function uses its instrumented <code>fetch</code>. If your load function queries Prisma directly (no URL), there's no URL to track. Use <code>depends('myapp:notes')</code> to register a custom key, then <code>invalidate('myapp:notes')</code> to trigger it. This also makes the dependency explicit and greppable in your codebase.
+      </div>
+    </div>
+
+    <div class="quiz-score" id="quiz-score"></div>
+  </div>
+
+  <!-- ── Exercise ── -->
+  <div class="exercise">
+    <div class="exercise-header">Hands-on exercise</div>
+    <h3>Refactor the admin image gallery</h3>
+
+    <p>Your admin page (<code>src/routes/admin/+page.svelte</code>) currently loads images in <code>onMount</code> and refreshes manually after upload. You'll move that logic to the server load function and use <code>invalidate</code> to refresh.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <p><strong>Add image loading to the existing server load function.</strong></p>
+        <p>Open <code>src/routes/admin/+page.server.ts</code>. It already returns <code>{ user }</code>. Add a <code>fetch('/api/images')</code> call and return <code>images</code> alongside it.</p>
+        <div class="tip-box">
+          The <code>load</code> function already receives <code>{ fetch }</code> — add it to the destructured parameter. This is SvelteKit's instrumented fetch, not the browser one.
+        </div>
+<pre><span class="kw">export const</span> <span class="fn">load</span>: <span class="ty">PageServerLoad</span> = <span class="kw">async</span> ({ <span class="pr">locals</span>, <span class="pr">fetch</span> }) <span class="op">=></span> {
+  <span class="cm">// existing auth check stays</span>
+  <span class="kw">if</span> (!locals.user) <span class="kw">throw</span> <span class="fn">redirect</span>(<span class="num">303</span>, <span class="str">'/'</span>);
+
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'/api/images'</span>);
+  <span class="kw">const</span> { images } = <span class="kw">await</span> res.<span class="fn">json</span>();
+
+  <span class="kw">return</span> { user: locals.user, images: images ?? [] };
+};</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <p><strong>Remove <code>onMount</code> and the local <code>images</code> state from the component.</strong></p>
+        <p>In <code>src/routes/admin/+page.svelte</code>, delete the <code>images = $state([])</code>, the <code>fetchImages</code> function, and the <code>onMount</code> block. You no longer need the <code>onMount</code> import either.</p>
+        <p>The <code>data.images</code> from the load function replaces all of it.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <p><strong>Replace the manual re-fetch with <code>invalidate</code>.</strong></p>
+        <p>In the <code>uploadImage</code> function, instead of calling <code>await fetchImages()</code>, call <code>await invalidate('/api/images')</code>.</p>
+<pre><span class="kw">import</span> { <span class="fn">invalidate</span> } <span class="kw">from</span> <span class="str">'$app/navigation'</span>;
+
+<span class="kw">async function</span> <span class="fn">uploadImage</span>(event: Event) {
+  <span class="cm">// ... existing upload code ...</span>
+
+  <span class="kw">if</span> (response.ok) {
+    uploadMessage = <span class="str">'Upload succeeded.'</span>;
+    selectedFile = <span class="kw">null</span>;
+    <span class="kw">await</span> <span class="fn">invalidate</span>(<span class="str">'/api/images'</span>);  <span class="cm">← replaces fetchImages()</span>
+  }
+}</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <p><strong>Update the template to use <code>data.images</code>.</strong></p>
+        <p>In the template, change <code>{#each images as image}</code> to <code>{#each data.images as image}</code>. The check for empty state becomes <code>{#if data.images.length}</code>.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <p><strong>Test it.</strong></p>
+        <ul class="checklist">
+          <li>Navigate to <code>/admin</code> — images should load immediately (no onMount delay).</li>
+          <li>Upload a new image — the gallery should refresh automatically without a page reload.</li>
+          <li>Open DevTools → Network. After upload, watch for a request to <code>/api/images</code> triggered by the invalidation (SvelteKit re-runs the load function, which fetches again).</li>
+          <li>Hard-refresh the page — images still load (because the load function runs on navigation too).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout tip" style="margin-top:1.5rem;">
+      <div class="callout-label">Bonus challenge</div>
+      The admin page has a delete flow (none currently, but imagine it). If you added a delete button that called <code>DELETE /api/images/:filename</code>, where would you call <code>invalidate</code>? What if you also wanted to show the count of images in a layout header? Would <code>invalidate('/api/images')</code> refresh that too?
+    </div>
+  </div>
+
+  <!-- ── When to use what ── -->
+  <h2>When to use each pattern</h2>
+
+  <table style="width:100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.9rem;">
+    <thead>
+      <tr style="background: var(--accent-light);">
+        <th style="text-align:left; padding: 0.6rem 1rem; border: 1px solid var(--border);">Scenario</th>
+        <th style="text-align:left; padding: 0.6rem 1rem; border: 1px solid var(--border);">Use</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding: 0.6rem 1rem; border: 1px solid var(--border);">Submitting an HTML form, CRUD via form actions</td>
+        <td style="padding: 0.6rem 1rem; border: 1px solid var(--border);"><code>use:enhance</code> (calls <code>update()</code>, which invalidates automatically)</td>
+      </tr>
+      <tr style="background: var(--bg);">
+        <td style="padding: 0.6rem 1rem; border: 1px solid var(--border);">Client fetch (file upload, JSON API call) after which page data needs refresh</td>
+        <td style="padding: 0.6rem 1rem; border: 1px solid var(--border);"><code>invalidate(url)</code> after the fetch completes</td>
+      </tr>
+      <tr>
+        <td style="padding: 0.6rem 1rem; border: 1px solid var(--border);">Data from Prisma directly in a load function (no URL)</td>
+        <td style="padding: 0.6rem 1rem; border: 1px solid var(--border);"><code>depends('myapp:key')</code> in load + <code>invalidate('myapp:key')</code> in component</td>
+      </tr>
+      <tr style="background: var(--bg);">
+        <td style="padding: 0.6rem 1rem; border: 1px solid var(--border);">Multiple things changed at once, not worth targeting</td>
+        <td style="padding: 0.6rem 1rem; border: 1px solid var(--border);"><code>invalidateAll()</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout info">
+    <div class="callout-label">Note on use:enhance</div>
+    You're already using <code>use:enhance</code> in the notes page. Under the hood, when <code>update()</code> is called in the callback, SvelteKit runs <code>invalidateAll()</code> to re-run all load functions. That's why the notes list refreshes after adding a note. <code>invalidate(url)</code> gives you the same power but with surgical precision.
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-note">
+    Questions? Ask your teacher agent. Type what confused you and it'll help you work through it.
+    <br><br>
+    <strong>Reference:</strong> <a href="https://kit.svelte.dev/docs/load#rerunning-load-functions" target="_blank">SvelteKit docs — Rerunning load functions</a>
+  </div>
+
+</div>
+
+<script>
+  const totals = {};
+  const answered = {};
+
+  function answer(btn) {
+    const q = btn.closest('.quiz-q');
+    const qNum = q.dataset.q;
+    if (answered[qNum]) return;
+    answered[qNum] = true;
+
+    const isCorrect = btn.dataset.correct === 'true';
+    const allOpts = q.querySelectorAll('.quiz-opt');
+    allOpts.forEach(opt => {
+      opt.disabled = true;
+      if (opt.dataset.correct === 'true') {
+        opt.classList.add('correct');
+        opt.querySelector('.mark').textContent = '✓';
+      } else if (opt === btn && !isCorrect) {
+        opt.classList.add('wrong');
+        opt.querySelector('.mark').textContent = '✗';
+      }
+    });
+
+    q.querySelector('.quiz-feedback').classList.add('show');
+    totals[qNum] = isCorrect ? 1 : 0;
+
+    const total = Object.keys(totals).length;
+    if (total === 3) {
+      const score = Object.values(totals).reduce((a, b) => a + b, 0);
+      const el = document.getElementById('quiz-score');
+      el.textContent = `${score}/3 — ${score === 3 ? 'Perfect.' : score === 2 ? 'Good — review the missed one above.' : 'Worth re-reading the sections above before the exercise.'}`;
+      el.classList.add('show');
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,70 +1,81 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import type { RouteData } from '$lib/types/auth';
-	import type { ImageMetadata } from '$lib/types/media';
+	import type { RouteDataImg } from "$lib/types/auth";
+	import { invalidate } from "$app/navigation";
 
-	let { data } = $props() as { data: RouteData };
+	let { data } = $props() as { data: RouteDataImg };
 	let selectedFile: File | null = $state(null);
-	let images: ImageMetadata[] = $state([]);
-	let uploadMessage = $state('');
+	let uploadMessage = $state("");
 
-	async function fetchImages() {
-		const response = await fetch('/api/images');
-		if (!response.ok) {
-			uploadMessage = 'Unable to load images.';
-			return;
-		}
-
-		const result = await response.json();
-		images = result.images ?? [];
-	}
+	//console.log($state.snapshot(data));
 
 	function handleFileChange(event: Event) {
 		const target = event.target as HTMLInputElement;
 		selectedFile = target.files?.[0] ?? null;
-		uploadMessage = '';
+		uploadMessage = "";
 	}
 
 	async function uploadImage(event: Event) {
 		event.preventDefault();
 
 		if (!selectedFile) {
-			uploadMessage = 'Select an image first.';
+			uploadMessage = "Select an image first.";
 			return;
 		}
 
 		const formData = new FormData();
-		formData.append('image', selectedFile);
+		formData.append("image", selectedFile);
 
-		const response = await fetch('/api/images', {
-			method: 'POST',
-			body: formData
+		const response = await fetch("/api/images", {
+			method: "POST",
+			body: formData,
 		});
 
 		const result = await response.json();
 		if (response.ok) {
-			uploadMessage = 'Upload succeeded.';
+			uploadMessage = "Upload succeeded.";
 			selectedFile = null;
-			await fetchImages();
+			await invalidate("/api/images");
 		} else {
-			uploadMessage = result.error || 'Upload failed.';
+			uploadMessage = result.error || "Upload failed.";
 		}
 	}
 
-	onMount(() => {
-		fetchImages();
-	});
+	async function deleteImage(event: Event, filename: string) {
+		event.preventDefault();
+
+		const formData = new FormData();
+		formData.append("filename", filename);
+
+		const response = await fetch("/api/images", {
+			method: "DELETE",
+			body: formData,
+		});
+
+		const result = await response.json();
+		if (response.ok) {
+			uploadMessage = "Image deleted successfully.";
+			selectedFile = null;
+			await invalidate("/api/images");
+		} else {
+			uploadMessage = result.error || "Delete failed.";
+		}
+	}
 </script>
 
 <div class="card">
-	<h1>Admin Dashboard</h1>
-	<p>Welcome back, <strong>{data.user.email}</strong>.</p>
+	<h1>Admin Dashboard - THis is the ADMIN Version</h1>
+	<p>Welcome back, <strong>{data.user?.email || "Missing Email!"}</strong>.</p>
 
 	<section style="margin-top: 1.5rem;">
 		<h2>Upload an image</h2>
 		<form onsubmit={uploadImage}>
 			<label for="image">Choose an image</label>
-			<input id="image" type="file" accept="image/*" onchange={handleFileChange} />
+			<input
+				id="image"
+				type="file"
+				accept="image/*"
+				onchange={handleFileChange}
+			/>
 			<button type="submit" disabled={!selectedFile}>Upload image</button>
 		</form>
 		{#if uploadMessage}
@@ -74,13 +85,18 @@
 
 	<section style="margin-top: 1.5rem;">
 		<h2>Uploaded images</h2>
-		{#if images.length}
+		{#if data.images.length}
 			<div class="gallery">
-				{#each images as image}
+				{#each data.images as image}
 					<div class="image-card">
 						<img src={image.url} alt={image.filename} />
 						<div>
 							<a href={image.url} download={image.filename}>Download</a>
+						</div>
+						<div>
+							<a href="/" onclick={(e) => deleteImage(e, image.filename)}
+								>Delete</a
+							>
 						</div>
 					</div>
 				{/each}
@@ -134,5 +150,10 @@
 
 	button {
 		margin-top: 1rem;
+
+		&[disabled] {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
 	}
 </style>

@@ -1,4 +1,4 @@
-import { error, type RequestHandler } from '@sveltejs/kit';
+import { error, type RequestHandler, type Cookies } from '@sveltejs/kit';
 import fs from 'fs';
 import path from 'path';
 import { ensureStorage, getImagePath } from '$lib/server/storage';
@@ -16,7 +16,7 @@ function getContentType(filename: string) {
 	return contentTypes[path.extname(filename).toLowerCase()] ?? 'application/octet-stream';
 }
 
-async function requireAuth(cookies: RequestHandler['cookies']) {
+async function requireAuth(cookies: Cookies) {
 	const token = cookies.get('token');
 	if (!token) {
 		return null;
@@ -31,7 +31,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		throw error(401, 'Unauthorized');
 	}
 
-	const filename = path.basename(params.filename);
+	const filename = path.basename(params.filename || '');
 	if (!filename) {
 		throw error(400, 'Invalid filename');
 	}
@@ -45,8 +45,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		throw error(404, 'Image not found');
 	}
 
-	const stream = fs.createReadStream(filePath);
-	return new Response(stream, {
+	const fileData = await fs.promises.readFile(filePath);
+	return new Response(fileData, {
 		headers: {
 			'Content-Type': getContentType(filename),
 			'Content-Disposition': `inline; filename="${filename}"`
