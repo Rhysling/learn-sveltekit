@@ -6,17 +6,14 @@ export interface AuthTokenPayload {
 	name?: string;
 }
 
-export interface SessionUser {
-	email: string;
-	name?: string;
-}
-
 export interface RouteData {
-	user: SessionUser | null;
+	user: AuthTokenPayload | null;
+	currentPath?: string;
+	redirectTo?: string;
 }
 
 export type RouteDataImg = {
-	user: SessionUser;
+	user: AuthTokenPayload;
 	images: ImageMetadata[];
 };
 

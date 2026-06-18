@@ -2,15 +2,17 @@ import { verifyToken } from '$lib/server/auth';
 import type { RouteData, AuthTokenPayload } from '$lib/types/auth';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies, url }) => {
+	const redirectTo = url.searchParams.get('redirectTo') ?? '/';
+
 	const token = cookies.get('token');
 	if (!token) {
-		return { user: null };
+		return { user: null, redirectTo };
 	}
 
 	const payload = await verifyToken(token);
 	if (!payload) {
-		return { user: null };
+		return { user: null, redirectTo };
 	}
 
 	const user: AuthTokenPayload = {
@@ -20,6 +22,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	};
 
 	return {
-		user
+		user,
+		redirectTo
 	} satisfies RouteData;
 };

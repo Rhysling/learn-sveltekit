@@ -1,0 +1,60 @@
+@use "custom-variables" as c;
+@use "sass:color";
+
+a.button,
+button {
+	display: inline-block;
+	margin: 0 1rem;
+	padding: 0.5rem 1rem;
+	background-color: c.$main-color;
+	color: #fff;
+	border: 1px solid c.$dark-background;
+	border-radius: 4px;
+	font-weight: bold;
+	text-decoration: none;
+
+	&:hover {
+		background-color: c.$link-hover-color;
+	}
+
+	&:visited {
+		color: #fff;
+	}
+
+	&:not(:disabled):hover,
+	&:not(:disabled):focus {
+		background-image: linear-gradient(transparent, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0.10));
+	}
+
+	&:not(:disabled):focus {
+		outline: 2px solid c.$dark-text;
+	}
+
+	&:disabled,
+	&.narrow:disabled {
+		color: c.$gray-light;
+		background-color: c.$gray-lighter;
+		outline: 1px solid color.adjust(c.$dark-background, $lightness: 10%);
+		cursor: default;
+	}
+
+	&.primary {
+		font-size: 120%;
+	}
+
+	&.secondary {
+		color: c.$body-background;
+		background-color: c.$main-lighter;
+		border: 1px solid color.adjust(c.$dark-background, $lightness: 25%);
+	}
+
+	&.narrow {
+		font-size: 90%;
+		padding: 0.25em 2em;
+	}
+
+	&.small {
+		font-size: 70%;
+		padding: 0.25em 0.5em;
+	}
+}

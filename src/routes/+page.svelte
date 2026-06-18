@@ -6,7 +6,9 @@
 <div class="card">
 	<header class="hero">
 		<h1>SvelteKit Tutorial Collection</h1>
-		<p class="tagline">Interactive, hands-on guides to building full-stack apps with SvelteKit.</p>
+		<p class="tagline">
+			Interactive, hands-on guides to building full-stack apps with SvelteKit.
+		</p>
 		{#if data.user}
 			<p class="signed-in">Signed in as <strong>{data.user.email}</strong></p>
 		{/if}
@@ -16,16 +18,27 @@
 		<h2>Start learning</h2>
 		<ul>
 			<li>
-				<a href="/tutorials/fullstack">
-					<strong>SvelteKit Full-Stack App Tutorial</strong>
+				<a href="/tutorials">
+					<strong>SvelteKit and Related Tutorials</strong>
 				</a>
-				<span class="desc">Routes, server data, JWT auth, and deploy-ready app structure — step by step.</span>
+				<span class="desc"
+					>This is the list of tutorials available for learning SvelteKit and
+					related technologies.</span
+				>
 			</li>
 			<li>
 				<a href="/examples">
 					<strong>Examples</strong>
 				</a>
 				<span class="desc">Interactive tutorials and example projects.</span>
+			</li>
+			<li>
+				<a href="/admin">
+					<strong>Admin Dashboard</strong>
+				</a>
+				<span class="desc"
+					>A protected admin interface for managing the application.</span
+				>
 			</li>
 		</ul>
 		<p class="placeholder">More tutorial sequences will be added here soon.</p>

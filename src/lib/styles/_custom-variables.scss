@@ -1,0 +1,60 @@
+@use "sass:color";
+
+:root {
+	color-scheme: light;
+	--bg: #f8fafc;
+	--surface: #ffffff;
+	--border: #e5e7eb;
+	--text: #111827;
+	--muted: #6b7280;
+	--accent: #2563eb;
+	--accent-dk: lch(from var(--accent) calc(l - 10) c h);
+	--radius: 0.75rem;
+}
+
+$bp-small: 600px;
+
+
+/* Original Below */
+
+$brand-100: #75dcff;
+$brand-200: #00a5e2;
+$brand-300: #006ba6;
+$brand-400: #00355a;
+
+$main-lightest: $brand-100;
+$main-lighter: $brand-200;
+$main-color: $brand-300; //rgb(31, 141, 214);
+$main-darker: $brand-400; //color.adjust($main-color, $lightness: -10%);
+//$secondary-color: $brand-200; //rgb(66, 184, 221);
+
+$body-text: #222222;
+$body-background: #e6e6e6;
+$dark-text: #2d3e50;
+$light-text: #aaaaaa;
+$light-background: #ffffff;
+$dark-background: #2d3e50;
+$disabled-text: #999999;
+
+$color-success: rgb(28, 184, 65);
+$color-success-bg: color.adjust($color-success, $lightness: 50%);
+
+$color-error: rgb(202, 60, 60);
+$color-error-bg: rgb(255, 212, 209);
+
+$color-warning: hsl(29, 91%, 49%);
+$color-warning-bg: color.adjust($color-warning, $lightness: 40%);
+
+$color-info: $main-lighter;
+$color-info-bg: color.adjust($color-info, $lightness: 50%);
+
+$gray-light: $body-text;
+$gray-lighter: color.adjust($dark-text, $lightness: 70%);
+
+
+
+$link-color: $main-color;
+$link-visited-color: $main-color;
+$link-hover-color: $main-lighter;
+$link-lighter: $main-lighter;
+$link-lightest: $main-lightest;

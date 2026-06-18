@@ -14,7 +14,8 @@ const config: UserConfig = {
 	kit: {
 		adapter: node(),
 		alias: {
-			$lib: './src/lib'
+			$lib: './src/lib',
+			$components: './src/components',
 		}
 	}
 };

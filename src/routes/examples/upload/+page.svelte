@@ -175,7 +175,7 @@
 	{/if}
 </div>
 
-<style>
+<style lang="scss">
 	.card {
 		max-width: 680px;
 		margin: 2rem auto;

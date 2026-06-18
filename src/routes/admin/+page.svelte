@@ -54,7 +54,6 @@
 		const result = await response.json();
 		if (response.ok) {
 			uploadMessage = "Image deleted successfully.";
-			selectedFile = null;
 			await invalidate("/api/images");
 		} else {
 			uploadMessage = result.error || "Delete failed.";
@@ -63,7 +62,7 @@
 </script>
 
 <div class="card">
-	<h1>Admin Dashboard - THis is the ADMIN Version</h1>
+	<h1>Admin Dashboard - This is the ADMIN Version</h1>
 	<p>Welcome back, <strong>{data.user?.email || "Missing Email!"}</strong>.</p>
 
 	<section style="margin-top: 1.5rem;">

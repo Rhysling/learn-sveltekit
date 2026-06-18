@@ -1,35 +1,44 @@
 <script lang="ts">
 	import "$lib/styles/global.scss";
 	import type { RouteData } from "$lib/types/auth";
+	import UserStatus from "$components/UserStatus.svelte";
+	import SiteMap from "$components/SiteMap.svelte";
 
-	type LayoutData = RouteData & { currentPath: string };
-	let { data, children } = $props() as { data: LayoutData; children: () => any };
+	let { data, children }: { data: RouteData; children: any } = $props();
 </script>
 
-<nav
-	style="padding: 1rem; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; gap: 1rem; align-items: center;"
->
-	<div>
-		<strong>
+<div class="container">
+	<nav>
+		<div class="logo">
 			{#if data.currentPath === "/"}
 				SvelteKit + SQLite Tutorials
 			{:else}
 				<a href="/">SvelteKit + SQLite Tutorials</a>
 			{/if}
-		</strong>
-	</div>
-
-	{#if data.user}
-		<div>
-			Logged in as <strong>{data.user.email}</strong>
-			{#if data.user.name}
-				<span>({data.user.name})</span>
-			{/if}
 		</div>
-		<div>
-			<a href="/admin">Admin</a>
-		</div>
-	{/if}
-</nav>
 
-{@render children()}
+		{#if data.currentPath !== "/login"}
+			<UserStatus {data} />
+		{/if}
+	</nav>
+
+	<SiteMap />
+
+	{@render children()}
+</div>
+
+<style lang="scss">
+	nav {
+		padding: 1rem;
+		border-bottom: 1px solid #ddd;
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: center;
+
+		.logo {
+			font-weight: bold;
+			font-size: 1.25rem;
+		}
+	}
+</style>
