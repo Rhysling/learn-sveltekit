@@ -110,6 +110,12 @@
 						path: "/dashboard",
 						children: [],
 					},
+					{
+						title: "Loading Playground",
+						description: "Play with how load functions work.",
+						path: "/examples/loader",
+						children: [],
+					},
 				],
 			},
 			{
