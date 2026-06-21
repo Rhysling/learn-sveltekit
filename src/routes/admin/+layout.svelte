@@ -1,7 +1,11 @@
 <script lang="ts">
+	import SiteMap from "$components/SiteMap.svelte";
+
+	let { children } = $props();
 </script>
 
-<h1>Admin Dashboard - placeholder</h1>
+<SiteMap pathForMenu="/admin" />
+{@render children()}
 
 <style lang="scss">
 	@use "../../lib/styles/custom-variables" as c;

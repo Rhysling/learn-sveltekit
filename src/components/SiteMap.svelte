@@ -9,6 +9,12 @@
 		children: SitePage[];
 	};
 
+	type SiteMapProps = {
+		pathForMenu: string;
+	};
+
+	let { pathForMenu = "" }: SiteMapProps = $props();
+
 	const pageTree: SitePage = {
 		title: "Home",
 		description: "Welcome to the SvelteKit Tutorial Collection.",
@@ -123,7 +129,21 @@
 				description:
 					"A protected admin interface for managing the application.",
 				path: "/admin",
-				children: [],
+				includeChildren: true,
+				children: [
+					{
+						title: "Users",
+						description: "Manage users.",
+						path: "/admin/users",
+						children: [],
+					},
+					{
+						title: "Images",
+						description: "Manage images.",
+						path: "/admin/images",
+						children: [],
+					},
+				],
 			},
 		],
 	};
@@ -138,6 +158,14 @@
 
 		for (const c of base.children) {
 			const result = buildBreadcrumbs(c, localList, path);
+			if (result) return result;
+		}
+	}
+
+	function findPageByPath(base: SitePage, path: string): SitePage | undefined {
+		if (base.path === path) return base;
+		for (const c of base.children) {
+			const result = findPageByPath(c, path);
 			if (result) return result;
 		}
 	}
@@ -168,59 +196,108 @@
 	let currentNavIx = $derived.by(() =>
 		navList.findIndex((c) => c.path === currentPage.path),
 	);
+
+	let isSiteMap = $derived(!pathForMenu);
+
+	let menuPages = $derived.by(() => {
+		if (isSiteMap) return [];
+
+		const pg = findPageByPath(pageTree, pathForMenu);
+		if (!pg) return [];
+		return pg.includeChildren ? [pg, ...pg.children] : [...pg.children];
+	});
 </script>
 
-<div>
-	{#if crumbs}
-		{#each crumbs as crumb, i}
-			<a href={crumb.path}>{crumb.title}</a>
-			{i < crumbs.length - 1 ? " > " : ""}
+{#if isSiteMap}
+	<div class="site-map">
+		<div>
+			{#if crumbs}
+				{#each crumbs as crumb, i}
+					<a href={crumb.path}>{crumb.title}</a>
+					{i < crumbs.length - 1 ? " > " : ""}
+				{/each}
+			{:else}
+				No breadcrumbs found.
+			{/if}
+		</div>
+
+		<div>
+			<button
+				class="small"
+				disabled={currentNavIx === 0}
+				onclick={() => (window.location.href = navList[0].path || "/")}
+			>
+				First
+			</button>
+			<button
+				class="small"
+				disabled={currentNavIx === 0}
+				onclick={() =>
+					(window.location.href = navList[currentNavIx - 1].path || "/")}
+			>
+				Previous
+			</button>
+			<button
+				class="small"
+				disabled={currentPage.path === "/"}
+				onclick={() => (window.location.href = parentPage.path || "/")}
+			>
+				Up
+			</button>
+			<button
+				class="small"
+				disabled={currentNavIx === navList.length - 1}
+				onclick={() =>
+					(window.location.href = navList[currentNavIx + 1].path || "/")}
+			>
+				Next
+			</button>
+
+			<button
+				class="small"
+				style="margin-right:0;"
+				disabled={currentNavIx === navList.length - 1}
+				onclick={() =>
+					(window.location.href = navList[navList.length - 1].path || "/")}
+			>
+				Last
+			</button>
+		</div>
+	</div>
+{:else}<!-- navForPath menu below -->
+	<ul>
+		{#each menuPages as mp, i}
+			{@const mpl = menuPages.length - 1}
+			{#if page.route.id === mp.path}
+				<li style="font-weight:bold;">{mp.title}</li>
+			{:else}
+				<li><a href={mp.path} title={mp.description}>{mp.title}</a></li>
+			{/if}
+			{#if i < mpl}&#8226;&nbsp;{/if}
 		{/each}
-	{:else}
-		No breadcrumbs found.
-	{/if}
-</div>
-
-<div>
-	<p>Nav Buttons: -- Ix = {currentNavIx}</p>
-	<button
-		disabled={currentNavIx === 0}
-		onclick={() => (window.location.href = navList[0].path || "/")}
-	>
-		First
-	</button>
-	<button
-		disabled={currentNavIx === 0}
-		onclick={() =>
-			(window.location.href = navList[currentNavIx - 1].path || "/")}
-	>
-		Previous
-	</button>
-	<button
-		disabled={currentPage.path === "/"}
-		onclick={() => (window.location.href = parentPage.path || "/")}
-	>
-		Up
-	</button>
-	<button
-		disabled={currentNavIx === navList.length - 1}
-		onclick={() =>
-			(window.location.href = navList[currentNavIx + 1].path || "/")}
-	>
-		Next
-	</button>
-
-	<button
-		disabled={currentNavIx === navList.length - 1}
-		onclick={() =>
-			(window.location.href = navList[navList.length - 1].path || "/")}
-	>
-		Last
-	</button>
-</div>
+	</ul>
+{/if}
 
 <style lang="scss">
 	@use "../lib/styles/custom-variables" as c;
+
+	.site-map {
+		display: flex;
+		flex-flow: row wrap;
+		justify-content: space-between;
+		margin: 0.5rem 0;
+		padding: 0.25rem;
+		background-color: c.$main-lightest;
+	}
+
+	ul {
+		margin: 0.5rem 0;
+		padding: 0;
+
+		li {
+			display: inline-block;
+		}
+	}
 
 	@media only screen and (width <= c.$bp-small) {
 	}
