@@ -107,7 +107,7 @@
 </div>
 
 <style lang="scss">
-	@use "../../../lib/styles/custom-variables" as c;
+	@use "../../../../lib/styles/custom-variables" as c;
 	.card {
 		max-width: 780px;
 		margin: 2rem auto;

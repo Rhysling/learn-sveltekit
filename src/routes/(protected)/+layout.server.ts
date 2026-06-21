@@ -5,5 +5,5 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {
 		redirect(303, `/login?redirectTo=${encodeURIComponent(url.pathname)}`);
 	}
-	return { user: locals.user };
+	return { currentUser: locals.user };
 };

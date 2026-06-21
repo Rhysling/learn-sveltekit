@@ -18,7 +18,8 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	const user: AuthTokenPayload = {
 		userId: payload.userId,
 		email: payload.email,
-		name: payload.name
+		name: payload.name,
+		isAdmin: payload.isAdmin
 	};
 
 	return {

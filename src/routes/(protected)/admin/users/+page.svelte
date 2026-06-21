@@ -1,9 +1,18 @@
 <script lang="ts">
-	import type { UserRemote, LoginRequestBody } from "../../../lib/types/auth";
+	import type {
+		AuthTokenPayload,
+		UserRemote,
+		LoginRequestBody,
+	} from "../../../../lib/types/auth";
+	import { page } from "$app/state";
+	import { invalidateAll } from "$app/navigation";
+	import { untrack } from "svelte";
 	import EditUser from "../users/EditUser.svelte";
 	import EditPw from "../users/EditPw.svelte";
 
-	let userList: UserRemote[] = $state([]);
+	let { data } = $props();
+	let userList: UserRemote[] = $state(untrack(() => data.users));
+	let currentUser: AuthTokenPayload = $derived(page.data.user);
 	let isListEditMode = $state(false);
 	let editingUserId = $state("");
 	let isEditPw = $state(false);
@@ -19,7 +28,13 @@
 		formData.append("user", JSON.stringify(user));
 		const res = await fetch("?/save", { method: "POST", body: formData });
 
-		if (!res.ok) alert(res.statusText);
+		if (!res.ok) {
+			alert(res.statusText);
+			return;
+		}
+
+		await invalidateAll();
+		userList = data.users;
 	};
 
 	const destroyUser = async (user: UserRemote) => {
@@ -27,7 +42,13 @@
 		formData.append("userId", user.id);
 		const res = await fetch("?/destroy", { method: "POST", body: formData });
 
-		if (!res.ok) alert(res.statusText);
+		if (!res.ok) {
+			alert(res.statusText);
+			return;
+		}
+
+		await invalidateAll();
+		userList = data.users;
 	};
 
 	const openSetPw = (email: string, isOpen: boolean) => {
@@ -53,6 +74,7 @@
 		<EditUser
 			userIn={user}
 			{userList}
+			{currentUser}
 			{isListEditMode}
 			{editingUserId}
 			{setEditMode}
@@ -68,7 +90,7 @@
 {/if}
 
 <style lang="scss">
-	@use "../../../lib/styles/custom-variables" as c;
+	@use "../../../../lib/styles/custom-variables" as c;
 
 	.title {
 		font-size: 2rem;

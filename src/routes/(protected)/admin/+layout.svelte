@@ -8,7 +8,7 @@
 {@render children()}
 
 <style lang="scss">
-	@use "../../lib/styles/custom-variables" as c;
+	@use "../../../lib/styles/custom-variables" as c;
 
 	@media only screen and (width <= c.$bp-small) {
 	}

@@ -2,14 +2,17 @@ import prisma from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import type { PageServerLoad } from './$types';
-import type { UserRemote, LoginRequestBody } from "../../../lib/types/auth";
-import type { UserModel } from '../../../generated/prisma/models';
+import type { UserRemote } from "../../../../lib/types/auth";
+import type { UserModel } from '../../../../generated/prisma/models';
 
 const emptyUser: UserRemote = {
 	id: "",
 	name: "",
 	email: "",
 	createdAt: new Date(),
+	lastLoginAt: new Date(),
+	isAdmin: false,
+	isDisabled: false,
 	hasPw: false,
 };
 
@@ -23,7 +26,16 @@ export const load: PageServerLoad = async () => {
 	const users: UserRemote[] = [
 		{ ...emptyUser },
 		...(await prisma.user.findMany())
-			.map(a => ({ id: a.id, name: a.name || "", email: a.email, createdAt: a.createdAt, hasPw: !!a.password }))
+			.map(a => ({
+				id: a.id,
+				name: a.name || "",
+				email: a.email,
+				createdAt: a.createdAt,
+				lastLoginAt: a.lastLoginAt,
+				isAdmin: a.isAdmin,
+				isDisabled: a.isDisabled,
+				hasPw: !!a.password
+			}))
 			.sort((a, b) => sortFn(a.name, b.name))
 	];
 
@@ -57,6 +69,8 @@ export const actions: Actions = {
 				data: {
 					name: user.name || "",
 					email: user.email,
+					isAdmin: user.isAdmin,
+					isDisabled: user.isDisabled,
 				},
 			});
 
@@ -64,12 +78,14 @@ export const actions: Actions = {
 		}
 
 		// Insert
-		const um: UserModel = {
-			id: user.id,
+		const um: Omit<UserModel, "id"> = {
 			name: user.name,
 			email: user.email,
 			password: "",
-			createdAt: new Date()
+			createdAt: new Date(),
+			lastLoginAt: new Date(),
+			isAdmin: false,
+			isDisabled: false
 		};
 
 		await prisma.user.create({ data: um })

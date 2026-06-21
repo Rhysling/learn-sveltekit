@@ -21,13 +21,11 @@
 </div>
 
 <style lang="scss">
-	$brand-100: #75dcff;
-
 	.card {
 		max-width: 680px;
 		margin: 2rem auto;
 		padding: 1.5rem;
-		border: 2px solid $brand-100;
+		border: 2px solid var(--brand-100);
 		border-radius: 12px;
 		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
 	}
@@ -37,7 +35,7 @@
 		gap: 0.5rem;
 		margin-top: 1rem;
 		padding: 1rem;
-		border: 1px solid $brand-100;
+		border: 1px solid var(--brand-100);
 		border-radius: 8px;
 		background-color: #f9f9f9;
 

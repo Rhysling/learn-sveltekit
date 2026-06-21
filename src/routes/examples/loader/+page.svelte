@@ -81,13 +81,11 @@
 </div>
 
 <style lang="scss">
-	@use "../../../lib/styles/custom-variables" as c;
-
 	.card {
 		max-width: 680px;
 		margin: 2rem auto;
 		padding: 1.5rem;
-		border: 2px solid c.$main-lightest;
+		border: 2px solid var(--main-lightest);
 		border-radius: 12px;
 		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
 

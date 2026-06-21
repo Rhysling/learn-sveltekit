@@ -5,10 +5,11 @@ type Prettify<T> = {
 	[K in keyof T]: T[K];
 } & {};
 
-export interface AuthTokenPayload {
+export type AuthTokenPayload = {
 	userId: string;
 	email: string;
 	name?: string;
+	isAdmin: boolean;
 }
 
 export interface RouteData {

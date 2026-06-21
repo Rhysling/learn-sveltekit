@@ -1,5 +1,4 @@
 @charset "utf-8";
-@use "custom-variables" as c;
 
 /* Global reset and default styles */
 :where(html, body, div, span, applet, object, iframe,
@@ -28,8 +27,8 @@
 :where(body) {
 	line-height: 1.6;
 	min-height: 100vh;
-	background: c.$background-main;
-	color: c.$text-main;
+	background: var(--background-main);
+	color: var(--text-main);
 	font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
 		"Segoe UI", sans-serif;
 }
@@ -42,7 +41,7 @@ h5,
 h6 {
 	font-weight: 700;
 	line-height: 1.25;
-	color: c.$text-main;
+	color: var(--text-main);
 }
 
 h1 {
@@ -95,7 +94,7 @@ h3 {
 }
 
 :where(:focus-visible) {
-	outline: 2px solid c.$main-color;
+	outline: 2px solid var(--main-color);
 	outline-offset: 2px;
 }
 

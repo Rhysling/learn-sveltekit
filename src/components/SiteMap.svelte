@@ -10,10 +10,14 @@
 	};
 
 	type SiteMapProps = {
-		pathForMenu: string;
+		pathForMenu?: string;
 	};
 
 	let { pathForMenu = "" }: SiteMapProps = $props();
+
+	let cleanPageRoute = $derived(
+		(page.route.id || "/").replace(/\/\([^)]*\)/g, "") || "/",
+	);
 
 	const pageTree: SitePage = {
 		title: "Home",
@@ -108,12 +112,6 @@
 						title: "Notes Form Example",
 						description: "Save notes to SQLite.",
 						path: "/examples/notes",
-						children: [],
-					},
-					{
-						title: "Standalone Dashooard",
-						description: "A dashboard in a protected route.",
-						path: "/dashboard",
 						children: [],
 					},
 					{
@@ -268,10 +266,12 @@
 	<ul>
 		{#each menuPages as mp, i}
 			{@const mpl = menuPages.length - 1}
-			{#if page.route.id === mp.path}
+			{#if cleanPageRoute === mp.path}
 				<li style="font-weight:bold;">{mp.title}</li>
 			{:else}
-				<li><a href={mp.path} title={mp.description}>{mp.title}</a></li>
+				<li>
+					<a href={mp.path} title={mp.description}>{mp.title}</a>
+				</li>
 			{/if}
 			{#if i < mpl}&#8226;&nbsp;{/if}
 		{/each}
@@ -287,7 +287,7 @@
 		justify-content: space-between;
 		margin: 0.5rem 0;
 		padding: 0.25rem;
-		background-color: c.$main-lightest;
+		background-color: var(--main-lightest);
 	}
 
 	ul {

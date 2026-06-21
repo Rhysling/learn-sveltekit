@@ -1,9 +1,12 @@
 import prisma from '$lib/server/db';
+import { redirect } from '@sveltejs/kit';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals, url }) => {
+	if (!locals.user) throw redirect(303, `/login?redirectTo=${encodeURIComponent(url.pathname)}`);
+
 	return {
 		notes: await prisma.note.findMany()
 	}

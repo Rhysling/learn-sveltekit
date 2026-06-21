@@ -14,7 +14,7 @@ export async function verifyPassword(password: string, hash: string) {
 }
 
 export async function createToken(user: AuthTokenPayload) {
-	return new SignJWT({ email: user.email, name: user.name, sub: user.userId })
+	return new SignJWT({ email: user.email, name: user.name, isAdmin: user.isAdmin, userId: user.userId })
 		.setProtectedHeader({ alg: 'HS256' })
 		.setExpirationTime('7d')
 		.sign(jwtSecret);
@@ -23,13 +23,14 @@ export async function createToken(user: AuthTokenPayload) {
 export async function verifyToken(token: string): Promise<AuthTokenPayload | null> {
 	try {
 		const { payload } = await jwtVerify(token, jwtSecret);
-		if (typeof payload.sub !== 'string' || typeof payload.email !== 'string') {
+		if (typeof payload.userId !== 'string' || typeof payload.email !== 'string') {
 			return null;
 		}
 		return {
-			userId: payload.sub,
+			userId: payload.userId,
 			email: payload.email,
-			name: typeof payload.name === 'string' ? payload.name : undefined
+			name: typeof payload.name === 'string' ? payload.name : undefined,
+			isAdmin: payload.isAdmin === true
 		};
 	} catch {
 		return null;

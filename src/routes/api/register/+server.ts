@@ -20,7 +20,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	const hashed = await hashPassword(password);
 	const user = await prisma.user.create({ data: { email, password: hashed, name: name || undefined } });
-	const token = await createToken({ userId: user.id, email: user.email, name: user.name ?? undefined });
+	const token = await createToken({ userId: user.id, email: user.email, name: user.name ?? undefined, isAdmin: false });
 
 	cookies.set('token', token, {
 		httpOnly: true,

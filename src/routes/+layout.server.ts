@@ -13,7 +13,8 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
 		user: {
 			userId: payload.userId,
 			email: payload.email,
-			name: payload.name
+			name: payload.name,
+			isAdmin: payload.isAdmin
 		} satisfies AuthTokenPayload
 	};
 };

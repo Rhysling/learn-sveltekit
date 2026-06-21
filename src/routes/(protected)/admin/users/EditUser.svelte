@@ -1,21 +1,26 @@
 <script lang="ts">
-	import type { UserRemote } from "../../../lib/types/auth";
-	import type { ValidationState } from "../../../lib/types/utility";
+	import type {
+		AuthTokenPayload,
+		UserRemote,
+	} from "../../../../lib/types/auth";
+	import type { ValidationState } from "../../../../lib/types/utility";
 
 	type EditUserProps = {
 		userIn: UserRemote;
 		userList: UserRemote[];
+		currentUser: AuthTokenPayload;
 		isListEditMode: boolean;
 		editingUserId: string;
 		setEditMode: (userId: string, isEdit: boolean) => void;
-		saveUser: (user: UserRemote) => void;
-		destroyUser: (user: UserRemote) => void;
+		saveUser: (user: UserRemote) => Promise<void>;
+		destroyUser: (user: UserRemote) => Promise<void>;
 		openSetPw: (email: string, isOpen: boolean) => void;
 	};
 
 	let {
 		userIn,
 		userList,
+		currentUser,
 		isListEditMode,
 		editingUserId,
 		setEditMode,
@@ -67,10 +72,10 @@
 		isEditMode = true;
 	};
 
-	const save = () => {
+	const save = async () => {
 		validateAll();
 		if (isValidAll) {
-			saveUser(userEdited);
+			await saveUser(userEdited);
 			userEdited = { ...userIn };
 			setEditMode("", false);
 			isValidEmail = undefined;
@@ -87,11 +92,11 @@
 		isEditMode = false;
 	};
 
-	const destroy = () => {
+	const destroy = async () => {
 		let isOk = confirm("Are you sure you want to destroy this user?");
 
 		if (isOk) {
-			destroyUser(userEdited);
+			await destroyUser(userEdited);
 			setEditMode("", false);
 			isValidEmail = undefined;
 			isValidFullName = undefined;
@@ -101,11 +106,9 @@
 </script>
 
 <div class="user-info">
+	<div style:font-style={userEdited.id === "" ? "italic" : "normal"}>Id:</div>
 	<div style:font-style={userEdited.id === "" ? "italic" : "normal"}>
-		Id: {userEdited.id}
-	</div>
-	<div style:font-style={userEdited.id === "" ? "italic" : "normal"}>
-		{userEdited.id === "" ? "New" : ""}
+		{userEdited.id === "" ? "New" : userEdited.id}
 	</div>
 	<div>Full Name:</div>
 	<div>
@@ -140,7 +143,9 @@
 	<div>&nbsp;</div>
 	<div>
 		<span>
-			{#if isEditMode && userEdited.id !== user.isAdmin}<span>Is Admin</span>
+			{#if isEditMode && userEdited.id !== currentUser.userId}<span
+					>Is Admin</span
+				>
 				<input
 					type="checkbox"
 					bind:checked={userEdited.isAdmin}
@@ -150,7 +155,7 @@
 		</span>
 
 		<span>
-			{#if isEditMode && userEdited.id !== user.value?.id}<span
+			{#if isEditMode && userEdited.id !== currentUser.userId}<span
 					>Is Disabled</span
 				>
 				<input
@@ -161,21 +166,11 @@
 			{:else if userEdited.isDisabled}<span class="warning">Disabled</span>{/if}
 		</span>
 
-		<span>
-			{#if isEditMode && userEdited.id !== user.value?.id}<span>Is Deleted</span
-				>
-				<input
-					type="checkbox"
-					bind:checked={userEdited.isDeleted}
-					style="width:auto;"
-				/>
-			{:else if userEdited.isDeleted}<span class="warning">Deleted</span>{/if}
-		</span>
-		{#if !userIn.hasPw && userIn.id !== 0}
+		{#if !userIn.hasPw && userIn.id}
 			<span class="warning">No Pw</span>
 		{/if}
 	</div>
-	{#if isEditMode && userEdited.id !== 0 && userEdited.id !== user.value?.id}
+	{#if isEditMode && userEdited.id && userEdited.id !== currentUser.userId}
 		<div><button class="small" onclick={destroy}>Destroy</button></div>
 	{/if}
 	<div
@@ -193,7 +188,7 @@
 	{:else}
 		<div>
 			<button onclick={edit}>Edit</button><br />
-			{#if userEdited.id !== 0}<button
+			{#if userEdited.id}<button
 					onclick={() => openSetPw(userEdited.email, true)}>Set Pw</button
 				>{/if}
 		</div>
@@ -205,7 +200,7 @@
 </div>
 
 <style lang="scss">
-	@use "../../../lib/styles/custom-variables" as c;
+	@use "../../../../lib/styles/custom-variables" as c;
 
 	.user-info {
 		position: relative;
@@ -213,7 +208,7 @@
 		grid-template-columns: 6rem auto;
 		padding: 0.5rem;
 		line-height: 1.8rem;
-		background-color: c.$light-background;
+		background-color: var(--background-light);
 
 		> div {
 			min-height: 1.5rem;
@@ -233,9 +228,9 @@
 		input {
 			// outline: 1px solid c.$color-info;
 			// background-color: c.$color-info-bg;
-			font-size: 0.9rem;
+			font-size: 0.85rem;
 			width: min(300px, 80%);
-			padding: 0.2rem 0.4rem;
+			padding: 0 0.5rem;
 		}
 	}
 
@@ -268,7 +263,7 @@
 		&.warning {
 			font-style: italic;
 			font-weight: bold;
-			color: c.$color-warning;
+			color: var(--color-warning);
 			margin: 0 1rem 0 0;
 		}
 	}

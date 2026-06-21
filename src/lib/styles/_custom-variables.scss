@@ -1,48 +1,40 @@
-@use "sass:color";
-
 :root {
 	color-scheme: light;
+
+	--brand-100: #adf6e1; // old= #75dcff
+	--brand-200: #00a5e2;
+	--brand-300: #006ba6;
+	--brand-400: #00355a;
+
+	--main-lightest: var(--brand-100);
+	--main-lighter: var(--brand-200);
+	--main-color: var(--brand-300);
+	--main-darker: var(--brand-400);
+
+	--text-main: #222222;
+	--text-light: #aaaaaa;
+	--text-dark: lch(from var(--text-main) calc(l - 10) c h);
+	--text-disabled: #999999;
+	--background-main: #f8fafc;
+	--background-light: #ffffff;
+	--background-dark: #2d3e50;
+
+	--color-success: rgb(28, 184, 65);
+	--color-success-bg: hsl(from var(--color-success) h s calc(l + 50));
+	--color-error: rgb(202, 60, 60);
+	--color-error-bg: rgb(255, 212, 209);
+	--color-warning: hsl(29, 91%, 49%);
+	--color-warning-bg: hsl(from var(--color-warning) h s calc(l + 40));
+	--color-info: var(--main-lighter);
+	--color-info-bg: hsl(from var(--color-info) h s calc(l + 50));
+
+	--link-color: var(--main-color);
+	--link-visited: var(--main-color);
+	--link-hover: var(--main-darker);
+	--link-lighter: var(--main-lighter);
+	--link-lightest: var(--main-lightest);
+
+	--radius: 0.5rem;
 }
 
 $bp-small: 600px;
-$radius: 0.5rem;
-
-/* Original Below */
-
-$brand-100: #adf6e1; //#75dcff;
-$brand-200: #00a5e2;
-$brand-300: #006ba6;
-$brand-400: #00355a;
-
-$main-lightest: $brand-100;
-$main-lighter: $brand-200;
-$main-color: $brand-300;
-$main-darker: $brand-400;
-//$secondary-color: $brand-200; //rgb(66, 184, 221);
-
-$text-main: #222222;
-$text-light: #aaaaaa;
-$text-dark: lch(from $text-main calc(l - 10) c h);
-$text-disabled: #999999;
-$background-main: #f8fafc;
-$background-light: #ffffff;
-$background-dark: #2d3e50;
-
-$color-success: rgb(28, 184, 65);
-$color-success-bg: color.adjust($color-success, $lightness: 50%);
-
-$color-error: rgb(202, 60, 60);
-$color-error-bg: rgb(255, 212, 209);
-
-$color-warning: hsl(29, 91%, 49%);
-$color-warning-bg: color.adjust($color-warning, $lightness: 40%);
-
-$color-info: $main-lighter;
-$color-info-bg: color.adjust($color-info, $lightness: 50%);
-
-
-$link-color: $main-color;
-$link-visited: $main-color;
-$link-hover: $main-darker;
-$link-lighter: $main-lighter;
-$link-lightest: $main-lightest;
