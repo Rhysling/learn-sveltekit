@@ -57,13 +57,26 @@
 	};
 
 	const savePw = async (ul: LoginRequestBody): Promise<boolean> => {
-		const ok = false; //await postUpdatePw(ul);
-		if (!ok) return false;
-		const ix = userList.findIndex(
-			(u) => u.email.toLocaleLowerCase() === ul.email.toLowerCase(),
-		);
-		if (ix >= 0) userList[ix].hasPw = true;
+		const formData = new FormData();
+		formData.append("loginRequestBody", JSON.stringify(ul));
+		const res = await fetch("?/savePw", { method: "POST", body: formData });
+
+		if (!res.ok) {
+			alert(res.statusText);
+			return false;
+		}
+
+		await invalidateAll();
+		userList = data.users;
 		return true;
+
+		// const ok = false; //await postUpdatePw(ul);
+		// if (!ok) return false;
+		// const ix = userList.findIndex(
+		// 	(u) => u.email.toLocaleLowerCase() === ul.email.toLowerCase(),
+		// );
+		// if (ix >= 0) userList[ix].hasPw = true;
+		// return true;
 	};
 </script>
 

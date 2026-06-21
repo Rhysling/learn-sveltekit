@@ -69,7 +69,7 @@ input {
 	&.plain {
 		border-color: var(--text-main);
 		outline: 1px solid var(--text-main);
-		//background-color: c.$color-error-bg;
+		background-color: var(--background-main);
 	}
 
 	&:focus {

@@ -231,6 +231,7 @@
 			font-size: 0.85rem;
 			width: min(300px, 80%);
 			padding: 0 0.5rem;
+			border-radius: calc(var(--radius) / 2);
 		}
 	}
 

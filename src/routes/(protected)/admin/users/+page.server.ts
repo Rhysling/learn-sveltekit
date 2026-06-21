@@ -1,8 +1,9 @@
 import prisma from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
+import { hashPassword } from '$lib/server/auth';
 import type { Actions } from './$types';
 import type { PageServerLoad } from './$types';
-import type { UserRemote } from "../../../../lib/types/auth";
+import type { UserRemote, LoginRequestBody } from "../../../../lib/types/auth";
 import type { UserModel } from '../../../../generated/prisma/models';
 
 const emptyUser: UserRemote = {
@@ -98,5 +99,36 @@ export const actions: Actions = {
 		if (!userId) return fail(400, { error: 'Invalid user id.' });
 
 		await prisma.user.delete({ where: { id: userId } });
+	},
+
+	savePw: async ({ request }) => {
+		const data = await request.formData();
+		const json = (data.get("loginRequestBody") || "") as string;
+		if (!json)
+			return fail(400, { error: "savePw data is missing." });
+
+		const lrb = JSON.parse(json) as LoginRequestBody;
+		lrb.email = (lrb.email || "").trim().toLowerCase();
+		lrb.password = (lrb.password || "").trim();
+
+		if (!lrb.email)
+			return fail(400, { error: "User email is missing." });
+
+		if (!lrb.password)
+			return fail(400, { error: "User password is missing." });
+
+		const user = await prisma.user.findUnique({ where: { email: lrb.email } });
+		if (!user)
+			return fail(400, { error: `User not found with email '${lrb.email}'.` });
+
+		await prisma.user.update({
+			where: {
+				id: user.id,
+			},
+			data: {
+				password: await hashPassword(lrb.password)
+			},
+		});
 	}
+
 };
