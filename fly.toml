@@ -24,6 +24,5 @@ primary_region = 'sjc'
   min_machines_running = 0
 
 [[vm]]
-  memory = '512mb'
   cpus = 1
   memory_mb = 512
