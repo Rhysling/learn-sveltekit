@@ -140,38 +140,42 @@
 		{:else}{userIn.email}
 		{/if}
 	</div>
-	<div>&nbsp;</div>
-	<div>
-		<span>
-			{#if isEditMode && userEdited.id !== currentUser.userId}<span
-					>Is Admin</span
-				>
-				<input
-					type="checkbox"
-					bind:checked={userEdited.isAdmin}
-					style="width:auto;"
-				/>
+	{#if userEdited.id || isEditMode}
+		<div>&nbsp;</div>
+		<div>
+			{#if isEditMode && userEdited.id !== currentUser.userId}
+				<span>
+					Is Admin
+					<input
+						type="checkbox"
+						bind:checked={userEdited.isAdmin}
+						style="width:auto;"
+					/>
+				</span>
 			{:else if userEdited.isAdmin}<span class="warning">Admin</span>{/if}
-		</span>
 
-		<span>
-			{#if isEditMode && userEdited.id !== currentUser.userId}<span
-					>Is Disabled</span
-				>
-				<input
-					type="checkbox"
-					bind:checked={userEdited.isDisabled}
-					style="width:auto;"
-				/>
+			{#if isEditMode && userEdited.id !== currentUser.userId}
+				<span>
+					Is Disabled
+					<input
+						type="checkbox"
+						bind:checked={userEdited.isDisabled}
+						style="width:auto;"
+					/>
+				</span>
 			{:else if userEdited.isDisabled}<span class="warning">Disabled</span>{/if}
-		</span>
 
-		{#if !userIn.hasPw && userIn.id}
-			<span class="warning">No Pw</span>
-		{/if}
-	</div>
+			{#if !userIn.hasPw && userIn.id}
+				<span class="warning">No Pw</span>
+			{/if}
+		</div>
+	{/if}
 	{#if isEditMode && userEdited.id && userEdited.id !== currentUser.userId}
 		<div><button class="small" onclick={destroy}>Destroy</button></div>
+	{:else if userEdited.id}
+		<div class="times">
+			Created: {userEdited.createdAt.toLocaleString()} &#8226; Last: {userEdited.lastLoginAt.toLocaleString()}
+		</div>
 	{/if}
 	<div
 		class="cover"
@@ -219,10 +223,6 @@
 			margin: 0;
 			padding: 0 1rem 0 0;
 			min-width: 3rem;
-
-			> span {
-				padding: 0 0.25rem 0 0;
-			}
 		}
 
 		input {
@@ -232,6 +232,11 @@
 			width: min(300px, 80%);
 			padding: 0 0.5rem;
 			border-radius: calc(var(--radius) / 2);
+		}
+
+		.times {
+			grid-column: span 2;
+			font-size: 0.8rem;
 		}
 	}
 

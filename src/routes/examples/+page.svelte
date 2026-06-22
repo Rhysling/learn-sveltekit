@@ -11,11 +11,10 @@
 	</p>
 
 	<section class="links">
-		<h2>Available example</h2>
+		<h2>Available examples</h2>
 		<ul>
 			<li><a href="/examples/upload">Image upload example</a></li>
 			<li><a href="/examples/notes">Notes form example</a></li>
-			<li><a href="/dashboard">A protected dashboard</a></li>
 			<li><a href="/examples/loader">Loader playpen</a></li>
 		</ul>
 		<p class="placeholder">More examples are coming soon.</p>
