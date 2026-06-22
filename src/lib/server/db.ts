@@ -1,6 +1,6 @@
 import { PrismaClient } from "../../generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { DATABASE_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 declare global {
 	// eslint-disable-next-line no-var
@@ -8,7 +8,7 @@ declare global {
 }
 
 const adapter = new PrismaBetterSqlite3({
-	url: DATABASE_URL,
+	url: env.DATABASE_URL!,
 });
 
 const prisma = global.prisma ?? new PrismaClient({ adapter });
