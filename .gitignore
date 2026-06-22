@@ -40,7 +40,7 @@ yarn-error.log*
 
 # Package manager lock files (keep only the one you use)
 # Uncomment the ones you want to ignore:
-package-lock.json
+# package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
 
