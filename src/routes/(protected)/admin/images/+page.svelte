@@ -51,6 +51,8 @@
 					`Size: ${((result.size as number) / 1024 / 1024).toFixed(2)} MB`,
 				);
 			if (result.destination) parts.push(`Dest: ${result.destination}`);
+			parts.push(`Status: ${response.status}`);
+			parts.push(`Raw: ${JSON.stringify(result)}`);
 			uploadMessage = parts.join(" | ");
 		}
 	}
