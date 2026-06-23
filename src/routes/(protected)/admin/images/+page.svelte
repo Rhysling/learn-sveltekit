@@ -30,17 +30,26 @@
 			body: formData,
 		});
 
-		const result = await response.json();
+		let result: Record<string, unknown>;
+		try {
+			result = await response.json();
+		} catch {
+			uploadMessage = `Upload failed (${response.status}: ${response.statusText}). File may exceed size limit.`;
+			return;
+		}
+
 		if (response.ok) {
 			uploadMessage = "Upload succeeded.";
 			selectedFile = null;
 			await invalidate("/api/images");
 		} else {
-			const parts = [result.error || "Upload failed - no result.error."];
+			const parts = [result.error || "Upload failed - no result error."];
 			if (result.code) parts.push(`Code: ${result.code}`);
 			if (result.originalName) parts.push(`File: ${result.originalName}`);
 			if (result.size != null)
-				parts.push(`Size: ${(result.size / 1024 / 1024).toFixed(2)} MB`);
+				parts.push(
+					`Size: ${((result.size as number) / 1024 / 1024).toFixed(2)} MB`,
+				);
 			if (result.destination) parts.push(`Dest: ${result.destination}`);
 			uploadMessage = parts.join(" | ");
 		}

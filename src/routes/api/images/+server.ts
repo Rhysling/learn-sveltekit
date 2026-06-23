@@ -31,6 +31,12 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 	return json({ images });
 };
 
+export const config = {
+	body: {
+		maxSize: '10m'
+	}
+};
+
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	const user = await requireAuth(cookies);
 	if (!user) {
