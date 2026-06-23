@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 8: Shared State &amp; the Context API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --orange: #ea580c;
+      --orange-light: #fff7ed;
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+      --code-prop: #f8c555;
+      --code-rune: #ff9cac;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+
+    /* Header */
+    .lesson-header { border-bottom: 2px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-tag { display: inline-block; background: var(--accent-light); color: var(--accent); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.25rem 0.75rem; border-radius: 999px; margin-bottom: 0.75rem; }
+    h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+    .lesson-subtitle { color: var(--muted); font-size: 1.05rem; }
+    .lesson-meta { display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.85rem; color: var(--muted); }
+
+    /* Typography */
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.5rem 0 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+    h2:first-of-type { border-top: none; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--accent); }
+    p { margin-bottom: 1rem; }
+    a { color: var(--accent); text-decoration: underline; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* Callouts */
+    .callout { border-left: 3px solid; padding: 0.85rem 1rem; border-radius: 0 6px 6px 0; margin: 1.25rem 0; font-size: 0.95rem; }
+    .callout-title { font-weight: 600; margin-bottom: 0.25rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .callout.vue   { background: var(--green-light);  border-color: var(--green);  }
+    .callout.vue   .callout-title { color: var(--green); }
+    .callout.note  { background: var(--accent-light); border-color: var(--accent); }
+    .callout.note  .callout-title { color: var(--accent); }
+    .callout.warn  { background: var(--yellow-light); border-color: var(--yellow); }
+    .callout.warn  .callout-title { color: var(--yellow); }
+    .callout.danger{ background: var(--red-light);    border-color: var(--red);    }
+    .callout.danger .callout-title { color: var(--red); }
+    .callout.teacher { background: var(--orange-light); border-color: var(--orange); }
+    .callout.teacher .callout-title { color: var(--orange); }
+
+    /* Code */
+    pre { background: var(--code-bg); color: var(--code-text); border-radius: 8px; padding: 1.25rem 1.5rem; overflow-x: auto; margin: 1rem 0 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; line-height: 1.65; }
+    .code-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.3rem; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: #e9eaf0; padding: 0.15em 0.4em; border-radius: 3px; }
+    pre code { background: none; padding: 0; font-size: inherit; }
+
+    .kw   { color: var(--code-keyword); }
+    .fn   { color: var(--code-fn); }
+    .str  { color: var(--code-string); }
+    .cm   { color: var(--code-comment); font-style: italic; }
+    .ty   { color: var(--code-type); }
+    .op   { color: var(--code-op); }
+    .pr   { color: var(--code-prop); }
+    .rune { color: var(--code-rune); font-weight: 500; }
+
+    /* Comparison */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0 1.5rem; }
+    .compare-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
+    .compare pre { margin: 0; font-size: 0.78rem; }
+
+    /* Quiz */
+    .quiz-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; margin: 2.5rem 0; }
+    .quiz-section h2 { border-top: none; margin-top: 0; padding-top: 0; }
+    .question { margin-bottom: 1.75rem; }
+    .question-text { font-weight: 600; margin-bottom: 0.75rem; line-height: 1.5; }
+    .question-num { display: inline-block; background: var(--accent); color: white; font-size: 0.75rem; font-weight: 700; width: 1.5rem; height: 1.5rem; line-height: 1.5rem; text-align: center; border-radius: 50%; margin-right: 0.5rem; }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; font-size: 0.95rem; }
+    .option:hover { border-color: var(--accent); background: var(--accent-light); }
+    .option.correct { background: var(--green-light); border-color: var(--green); color: var(--green); font-weight: 500; }
+    .option.wrong   { background: var(--red-light);   border-color: var(--red);   color: var(--red); }
+    .option.disabled { pointer-events: none; opacity: 0.55; }
+    .option.correct.disabled { opacity: 1; }
+    .option-letter { font-weight: 700; font-size: 0.8rem; min-width: 1.2rem; color: var(--muted); }
+    .option.correct .option-letter { color: var(--green); }
+    .option.wrong   .option-letter { color: var(--red); }
+    .feedback { font-size: 0.875rem; margin-top: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 6px; display: none; }
+    .feedback.correct { background: var(--green-light); color: var(--green); }
+    .feedback.wrong   { background: var(--red-light);   color: var(--red); }
+    .feedback.show    { display: block; }
+    .quiz-score { margin-top: 1.5rem; padding: 1rem 1.25rem; background: var(--accent-light); border-radius: 8px; font-weight: 600; display: none; }
+    .quiz-score.show { display: block; }
+    .score-btn { display: inline-block; margin-top: 1rem; padding: 0.6rem 1.4rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .score-btn:hover { opacity: 0.88; }
+
+    /* Exercises */
+    .exercises { margin-top: 2.5rem; }
+    .exercise { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; }
+    .exercise-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .exercise-num { background: var(--accent); color: white; font-size: 0.8rem; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 999px; white-space: nowrap; }
+    .exercise-title { font-weight: 700; font-size: 1rem; }
+    .exercise-check { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .exercise-check input[type="checkbox"] { margin-top: 0.2rem; accent-color: var(--accent); width: 1rem; height: 1rem; flex-shrink: 0; cursor: pointer; }
+    .exercise-check label { cursor: pointer; line-height: 1.5; }
+    .verify-box { background: var(--green-light); border-left: 3px solid var(--green); border-radius: 0 6px 6px 0; padding: 0.6rem 0.85rem; font-size: 0.875rem; margin-top: 0.75rem; color: #065f46; }
+    .verify-box strong { color: var(--green); }
+
+    /* Summary */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+    .summary-card h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.5rem; }
+    .summary-card ul { padding-left: 1.1rem; font-size: 0.9rem; }
+    .summary-card li { margin-bottom: 0.25rem; }
+
+    /* Decision table */
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.9rem; }
+    th { background: var(--accent-light); color: var(--accent); text-align: left; padding: 0.6rem 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td code { font-size: 0.82em; }
+
+    /* Diagram */
+    .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 1.25rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre; overflow-x: auto; }
+    .diagram .label { color: var(--accent); font-weight: 600; }
+    .diagram .ctx { color: var(--purple); font-weight: 500; }
+    .diagram .mod { color: var(--orange); font-weight: 500; }
+
+    @media (max-width: 620px) {
+      .compare, .summary-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <div class="lesson-tag">Lesson 8 &middot; SvelteKit</div>
+    <h1>Shared State &amp; the Context API</h1>
+    <p class="lesson-subtitle">Three patterns for sharing reactive state between components &mdash; and when to reach for each one.</p>
+    <div class="lesson-meta">
+      <span>&9201; ~30 min</span>
+      <span>&#128203; Quiz + 3 exercises</span>
+      <span>&#127919; Tied to: auth state, admin features, component architecture</span>
+    </div>
+  </header>
+
+  <!-- The problem -->
+  <h2>The Problem: State That Lives Between Components</h2>
+
+  <p>So far, every piece of <code>$state</code> you've written lives inside a single component. That works for local UI &mdash; a toggle, a form field, a counter. But real apps need state that multiple components can read and write:</p>
+
+  <ul>
+    <li>The logged-in user's name, shown in a nav bar <em>and</em> a dashboard page</li>
+    <li>A theme or locale preference, readable by every component in the tree</li>
+    <li>A shared list (like your admin user list) that a parent page and its child edit modals both mutate</li>
+  </ul>
+
+  <p>Svelte 5 gives you three patterns for this, each suited to a different scope:</p>
+
+  <table>
+    <thead>
+      <tr><th>Pattern</th><th>Scope</th><th>When to use</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Module state</strong><br><code>.svelte.ts</code> files</td>
+        <td>Global &mdash; any component can import it</td>
+        <td>App-wide singletons: theme, feature flags, a shared data cache</td>
+      </tr>
+      <tr>
+        <td><strong>Context API</strong><br><code>setContext</code> / <code>getContext</code></td>
+        <td>Subtree &mdash; parent and its descendants only</td>
+        <td>Per-instance state: a form group, a data table, a layout's auth state</td>
+      </tr>
+      <tr>
+        <td><strong>Props</strong><br><code>$props()</code></td>
+        <td>Direct parent &rarr; child</td>
+        <td>One-hop data: passing a user object to a child card</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout vue">
+    <div class="callout-title">Vs Vue / Nuxt</div>
+    Vue has <code>provide</code> / <code>inject</code> (= Svelte's context), Pinia stores (= Svelte's module state in <code>.svelte.ts</code>), and props. The mental model maps directly &mdash; the APIs are just different.
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- PART 1: Module State                         -->
+  <!-- ============================================ -->
+  <h2>Pattern 1: Module State in <code>.svelte.ts</code> Files</h2>
+
+  <p>You already have one of these in your project: <code>src/lib/context/dummy-store.svelte.ts</code>. Let's break down <em>why</em> it works.</p>
+
+  <p>The <code>.svelte.ts</code> file extension tells the Svelte compiler to process runes in this file. Without it, <code>$state</code> is just an undefined variable &mdash; the compiler won't transform it. This is the key insight: <strong>runes work in any <code>.svelte.ts</code> / <code>.svelte.js</code> file, not just <code>.svelte</code> components.</strong></p>
+
+  <p><a href="https://svelte.dev/docs/svelte/$state" target="_blank">Official $state docs &rarr;</a></p>
+
+  <h3>The class pattern (recommended)</h3>
+
+  <p>The cleanest way to share reactive state is a class with <code>$state</code> fields, exported as a singleton:</p>
+
+  <div class="code-label">src/lib/state/theme.svelte.ts</div>
+  <pre><code><span class="kw">class</span> <span class="ty">ThemeState</span> {
+  <span class="pr">mode</span> <span class="op">=</span> <span class="rune">$state</span><span class="op">&lt;</span><span class="str">'light'</span> <span class="op">|</span> <span class="str">'dark'</span><span class="op">&gt;</span>(<span class="str">'light'</span>);
+
+  <span class="fn">toggle</span>() {
+    <span class="kw">this</span>.<span class="pr">mode</span> <span class="op">=</span> <span class="kw">this</span>.<span class="pr">mode</span> <span class="op">===</span> <span class="str">'light'</span> <span class="op">?</span> <span class="str">'dark'</span> <span class="op">:</span> <span class="str">'light'</span>;
+  }
+}
+
+<span class="kw">export const</span> <span class="pr">theme</span> <span class="op">=</span> <span class="kw">new</span> <span class="ty">ThemeState</span>();</code></pre>
+
+  <div class="code-label">Any component</div>
+  <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="pr">theme</span> } <span class="kw">from</span> <span class="str">'$lib/state/theme.svelte'</span>;
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+<span class="op">&lt;</span><span class="kw">button</span> <span class="pr">onclick</span><span class="op">={() =&gt;</span> <span class="pr">theme</span>.<span class="fn">toggle</span>()<span class="op">}&gt;</span>
+  Current: {<span class="pr">theme</span>.<span class="pr">mode</span>}
+<span class="op">&lt;/</span><span class="kw">button</span><span class="op">&gt;</span></code></pre>
+
+  <p>Any component that imports <code>theme</code> gets the same instance. When one component calls <code>theme.toggle()</code>, every other component reading <code>theme.mode</code> re-renders automatically. No subscriptions, no <code>.value</code>, no ceremony.</p>
+
+  <h3>The object pattern (simpler, same idea)</h3>
+
+  <p>If you don't need methods, export a plain <code>$state</code> object:</p>
+
+  <pre><code><span class="cm">// src/lib/state/ui.svelte.ts</span>
+<span class="kw">export const</span> <span class="pr">ui</span> <span class="op">=</span> <span class="rune">$state</span>({
+  <span class="pr">sidebarOpen</span><span class="op">:</span> <span class="kw">true</span>,
+  <span class="pr">modalVisible</span><span class="op">:</span> <span class="kw">false</span>,
+});</code></pre>
+
+  <p>Components import it and mutate properties directly: <code>ui.sidebarOpen = false</code>.</p>
+
+  <div class="callout danger">
+    <div class="callout-title">You cannot export a reassignable $state primitive</div>
+    <p>This does <strong>not</strong> work:</p>
+    <pre style="margin:0.6rem 0 0"><code><span class="kw">export let</span> <span class="pr">count</span> <span class="op">=</span> <span class="rune">$state</span>(<span class="op">0</span>);  <span class="cm">// &#10007; Importing modules won't see updates</span></code></pre>
+    <p style="margin:0.5rem 0 0">The Svelte compiler transforms <code>$state</code> into getter/setter wrappers, but those transformations are <strong>per-file</strong>. An importer gets the raw value at import time, not the reactive wrapper. Always export an <strong>object</strong> or <strong>class instance</strong> &mdash; mutate properties, don't reassign the whole binding.</p>
+  </div>
+
+  <h3>$state.raw &mdash; when you don't want deep reactivity</h3>
+
+  <p>By default, <code>$state</code> wraps objects in a deep reactive proxy. If you're storing a large, read-mostly dataset (e.g. a cached API response with hundreds of rows), <code>$state.raw</code> skips the proxy and only reacts to <em>reassignment</em>:</p>
+
+  <pre><code><span class="kw">class</span> <span class="ty">CachedUsers</span> {
+  <span class="pr">users</span> <span class="op">=</span> <span class="rune">$state</span>.<span class="fn">raw</span><span class="op">&lt;</span><span class="ty">User</span>[]<span class="op">&gt;</span>([]);
+
+  <span class="kw">async</span> <span class="fn">refresh</span>() {
+    <span class="kw">const</span> <span class="pr">res</span> <span class="op">=</span> <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'/api/users'</span>);
+    <span class="kw">this</span>.<span class="pr">users</span> <span class="op">=</span> <span class="kw">await</span> <span class="pr">res</span>.<span class="fn">json</span>();  <span class="cm">// reassignment &#8594; triggers update</span>
+  }
+}
+
+<span class="kw">export const</span> <span class="pr">cachedUsers</span> <span class="op">=</span> <span class="kw">new</span> <span class="ty">CachedUsers</span>();</code></pre>
+
+  <p><code>cachedUsers.users.push(newUser)</code> would <em>not</em> trigger an update &mdash; you'd have to reassign: <code>cachedUsers.users = [...cachedUsers.users, newUser]</code>. That's the tradeoff for better performance on large data.</p>
+
+  <div class="callout warn">
+    <div class="callout-title">SSR warning: module state is shared across requests</div>
+    <p>On the server, a <code>.svelte.ts</code> module is loaded <strong>once</strong> and shared across all incoming requests. If you mutate module-level state during SSR, one user's data could leak into another user's response. This is the same problem as a global variable in any Node server.</p>
+    <p style="margin:0.5rem 0 0"><strong>Rule:</strong> Module state is safe for <strong>client-only</strong> concerns (theme, UI toggles, cached data fetched client-side). For anything per-request (auth, user data), use the Context API instead &mdash; it's scoped to a component tree, not a module.</p>
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- PART 2: Context API                          -->
+  <!-- ============================================ -->
+  <h2>Pattern 2: The Context API</h2>
+
+  <p>Context solves a different problem than module state. It's for state that belongs to a <strong>specific subtree</strong> of the component hierarchy &mdash; not the whole app.</p>
+
+  <div class="diagram"><span class="label">+layout.svelte</span>  &larr; <span class="ctx">setContext('auth', user)</span>
+  &boxvr;&boxh; <span class="label">NavBar.svelte</span>    &larr; <span class="ctx">getContext('auth')</span> &rarr; shows user name
+  &boxvr;&boxh; <span class="label">+page.svelte</span>     &larr; <span class="ctx">getContext('auth')</span> &rarr; uses user.id
+  &boxur;&boxh; <span class="label">Sidebar.svelte</span>   &larr; <span class="ctx">getContext('auth')</span> &rarr; shows avatar</div>
+
+  <p>The parent calls <code>setContext</code> during initialization. Any descendant calls <code>getContext</code> with the same key. No prop drilling through intermediate components.</p>
+
+  <p><a href="https://svelte.dev/docs/svelte/context" target="_blank">Official Context API docs &rarr;</a></p>
+
+  <h3>The four functions</h3>
+
+  <table>
+    <thead>
+      <tr><th>Function</th><th>What it does</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>setContext(key, value)</code></td>
+        <td>Stores a value in the current component's context. Descendants can retrieve it.</td>
+      </tr>
+      <tr>
+        <td><code>getContext(key)</code></td>
+        <td>Retrieves the value set by the nearest ancestor. Throws if no ancestor set it.</td>
+      </tr>
+      <tr>
+        <td><code>hasContext(key)</code></td>
+        <td>Returns <code>true</code> if an ancestor set this key. Use for optional context.</td>
+      </tr>
+      <tr>
+        <td><code>getAllContexts()</code></td>
+        <td>Returns the full context <code>Map</code>. Rarely needed &mdash; useful for wrapper components that forward context.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>All four must be called during <strong>component initialization</strong> &mdash; that is, synchronously in the <code>&lt;script&gt;</code> block at the top level, not inside an event handler or <code>$effect</code>.</p>
+
+  <h3>Basic example: string key</h3>
+
+  <div class="compare">
+    <div>
+      <div class="compare-label" style="color:var(--purple)">Parent (sets context)</div>
+      <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">setContext</span> } <span class="kw">from</span> <span class="str">'svelte'</span>;
+  <span class="kw">import</span> <span class="ty">Child</span> <span class="kw">from</span> <span class="str">'./Child.svelte'</span>;
+
+  <span class="fn">setContext</span>(<span class="str">'greeting'</span>, <span class="str">'Hello!'</span>);
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+<span class="op">&lt;</span><span class="ty">Child</span> <span class="op">/&gt;</span></code></pre>
+    </div>
+    <div>
+      <div class="compare-label" style="color:var(--purple)">Child (reads context)</div>
+      <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">getContext</span> } <span class="kw">from</span> <span class="str">'svelte'</span>;
+
+  <span class="kw">const</span> <span class="pr">msg</span> <span class="op">=</span> <span class="fn">getContext</span>(<span class="str">'greeting'</span>);
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+<span class="op">&lt;</span><span class="kw">p</span><span class="op">&gt;</span>{<span class="pr">msg</span>}<span class="op">&lt;/</span><span class="kw">p</span><span class="op">&gt;</span>
+<span class="cm">&lt;!-- renders: Hello! --&gt;</span></code></pre>
+    </div>
+  </div>
+
+  <h3>Reactive context: passing $state objects</h3>
+
+  <p>A plain string in context is static &mdash; the child gets a snapshot. To make context <strong>reactive</strong>, pass a <code>$state</code> object:</p>
+
+  <div class="code-label">Parent layout</div>
+  <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">setContext</span> } <span class="kw">from</span> <span class="str">'svelte'</span>;
+
+  <span class="kw">let</span> <span class="pr">counter</span> <span class="op">=</span> <span class="rune">$state</span>({ <span class="pr">count</span><span class="op">:</span> <span class="op">0</span> });
+  <span class="fn">setContext</span>(<span class="str">'counter'</span>, <span class="pr">counter</span>);
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+<span class="op">&lt;</span><span class="kw">button</span> <span class="pr">onclick</span><span class="op">={() =&gt;</span> <span class="pr">counter</span>.<span class="pr">count</span> <span class="op">+=</span> <span class="op">1</span><span class="op">}&gt;</span>
+  Increment ({<span class="pr">counter</span>.<span class="pr">count</span>})
+<span class="op">&lt;/</span><span class="kw">button</span><span class="op">&gt;</span>
+
+<span class="op">&lt;</span><span class="kw">slot</span> <span class="op">/&gt;</span></code></pre>
+
+  <div class="code-label">Any descendant</div>
+  <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">getContext</span> } <span class="kw">from</span> <span class="str">'svelte'</span>;
+
+  <span class="kw">const</span> <span class="pr">counter</span> <span class="op">=</span> <span class="fn">getContext</span>(<span class="str">'counter'</span>);
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+<span class="op">&lt;</span><span class="kw">p</span><span class="op">&gt;</span>Count is: {<span class="pr">counter</span>.<span class="pr">count</span>}<span class="op">&lt;/</span><span class="kw">p</span><span class="op">&gt;</span>
+<span class="cm">&lt;!-- Updates live when parent mutates counter.count --&gt;</span></code></pre>
+
+  <div class="callout danger">
+    <div class="callout-title">The "broken link" trap</div>
+    <p>If the parent <strong>reassigns</strong> the entire object, the child's reference breaks:</p>
+    <pre style="margin:0.6rem 0 0"><code><span class="cm">// In the parent:</span>
+<span class="pr">counter</span> <span class="op">=</span> { <span class="pr">count</span><span class="op">:</span> <span class="op">0</span> };  <span class="cm">// &#10007; child still holds the OLD object</span>
+
+<span class="cm">// Instead, mutate properties:</span>
+<span class="pr">counter</span>.<span class="pr">count</span> <span class="op">=</span> <span class="op">0</span>;        <span class="cm">// &#10003; child sees the update</span></code></pre>
+    <p style="margin:0.5rem 0 0">This is the same rule as the <code>$state</code> destructuring gotcha from lesson 3. The child holds a reference to the reactive proxy object. Reassigning the variable in the parent creates a <em>new</em> proxy that the child knows nothing about.</p>
+  </div>
+
+
+  <h3>createContext &mdash; the type-safe way (Svelte 5.40+)</h3>
+
+  <p>String keys are fragile &mdash; typos silently break, and TypeScript can't infer the type of the value. Svelte 5.40 introduced <code>createContext</code> to solve both problems:</p>
+
+  <div class="code-label">src/lib/context/auth.ts</div>
+  <pre><code><span class="kw">import</span> { <span class="fn">createContext</span> } <span class="kw">from</span> <span class="str">'svelte'</span>;
+<span class="kw">import type</span> { <span class="ty">AuthTokenPayload</span> } <span class="kw">from</span> <span class="str">'$lib/types/auth'</span>;
+
+<span class="kw">export const</span> [<span class="fn">getAuth</span>, <span class="fn">setAuth</span>] <span class="op">=</span> <span class="fn">createContext</span><span class="op">&lt;</span><span class="ty">AuthTokenPayload</span><span class="op">&gt;</span>();</code></pre>
+
+  <p><code>createContext&lt;T&gt;()</code> returns a <code>[getter, setter]</code> tuple:</p>
+  <ul>
+    <li><code>setAuth(value)</code> &mdash; calls <code>setContext</code> internally with an auto-generated unique key</li>
+    <li><code>getAuth()</code> &mdash; calls <code>getContext</code> with that same key. <strong>Throws</strong> if no ancestor called <code>setAuth</code>.</li>
+  </ul>
+
+  <div class="compare">
+    <div>
+      <div class="compare-label" style="color:var(--purple)">Parent layout</div>
+      <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">setAuth</span> } <span class="kw">from</span> <span class="str">'$lib/context/auth'</span>;
+
+  <span class="kw">let</span> { <span class="pr">data</span> } <span class="op">=</span> <span class="rune">$props</span>();
+  <span class="fn">setAuth</span>(<span class="pr">data</span>.<span class="pr">user</span>);
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span></code></pre>
+    </div>
+    <div>
+      <div class="compare-label" style="color:var(--purple)">Any descendant</div>
+      <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">getAuth</span> } <span class="kw">from</span> <span class="str">'$lib/context/auth'</span>;
+
+  <span class="kw">const</span> <span class="pr">user</span> <span class="op">=</span> <span class="fn">getAuth</span>();
+  <span class="cm">// ^? AuthTokenPayload &mdash; fully typed!</span>
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span></code></pre>
+    </div>
+  </div>
+
+  <p>No string keys to mistype. Full TypeScript inference. If a child tries to call <code>getAuth()</code> without any ancestor having called <code>setAuth()</code>, it throws immediately &mdash; no silent <code>undefined</code>.</p>
+
+  <div class="callout note">
+    <div class="callout-title">createContext vs setContext/getContext</div>
+    <p><code>createContext</code> is the <strong>recommended</strong> approach going forward. Use raw <code>setContext</code>/<code>getContext</code> when you need dynamic keys, or when working with code that predates 5.40. For new code, prefer <code>createContext</code> &mdash; it's safer and cleaner.</p>
+  </div>
+
+  <h3>Context is per-instance, not global</h3>
+
+  <p>This is the key difference from module state. If you render a component twice, each instance gets its own context:</p>
+
+  <pre><code><span class="cm">&lt;!-- Each TabPanel sets its own context --&gt;</span>
+<span class="op">&lt;</span><span class="ty">TabPanel</span> <span class="pr">label</span><span class="op">=</span><span class="str">"Tab A"</span><span class="op">&gt;</span>
+  <span class="op">&lt;</span><span class="ty">TabContent</span> <span class="op">/&gt;</span>   <span class="cm">&lt;!-- reads Tab A's context --&gt;</span>
+<span class="op">&lt;/</span><span class="ty">TabPanel</span><span class="op">&gt;</span>
+
+<span class="op">&lt;</span><span class="ty">TabPanel</span> <span class="pr">label</span><span class="op">=</span><span class="str">"Tab B"</span><span class="op">&gt;</span>
+  <span class="op">&lt;</span><span class="ty">TabContent</span> <span class="op">/&gt;</span>   <span class="cm">&lt;!-- reads Tab B's context --&gt;</span>
+<span class="op">&lt;/</span><span class="ty">TabPanel</span><span class="op">&gt;</span></code></pre>
+
+  <p>Module state can't do this &mdash; there's only one instance. Context is the right tool whenever the "who set it" matters.</p>
+
+
+  <h3>Context + SSR: why it's safe</h3>
+
+  <p>Remember the SSR warning from module state? Context doesn't have that problem. Each server-side render creates a fresh component tree with its own context. Request A's <code>setContext('auth', userA)</code> is isolated from request B's. This makes context the correct choice for per-user data like auth state.</p>
+
+
+  <!-- ============================================ -->
+  <!-- PART 3: Real-world patterns                  -->
+  <!-- ============================================ -->
+  <h2>Combining Patterns: Context + Module State</h2>
+
+  <p>In practice, you'll often use both. Here's how they'd compose in your app:</p>
+
+  <div class="diagram"><span class="mod">$lib/state/theme.svelte.ts</span>      &larr; global, client-only (module state)
+  &boxvr;&boxh; imported by any component that needs theme
+
+<span class="ctx">+layout.svelte (protected)</span>       &larr; per-request auth (context)
+  &boxvr;&boxh; <span class="fn">setAuth</span>(data.user)
+  &boxvr;&boxh; <span class="label">NavBar.svelte</span>              &larr; reads auth <em>and</em> theme
+  &boxur;&boxh; <span class="label">+page.svelte</span>               &larr; reads auth</div>
+
+  <p>The <code>NavBar</code> imports <code>theme</code> from the module (global UI concern) and calls <code>getAuth()</code> from context (per-request concern). Clean separation.</p>
+
+
+  <h2>When To Use What &mdash; Decision Flowchart</h2>
+
+  <table>
+    <thead>
+      <tr><th>Question</th><th>Answer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Is it only used by one component?</td><td>Local <code>$state</code> &mdash; don't share it at all.</td></tr>
+      <tr><td>Is it one hop away (parent &rarr; child)?</td><td>Props via <code>$props()</code>.</td></tr>
+      <tr><td>Does it need to survive SSR without leaking across requests?</td><td>Context API (<code>setContext</code> / <code>createContext</code>).</td></tr>
+      <tr><td>Could multiple instances of the same component have different values?</td><td>Context API. Module state is a singleton.</td></tr>
+      <tr><td>Is it truly app-wide and client-only (theme, locale, UI toggles)?</td><td>Module state in <code>.svelte.ts</code>.</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ============================================ -->
+  <!-- QUIZ                                         -->
+  <!-- ============================================ -->
+  <div class="quiz-section">
+    <h2>Quiz &mdash; Check Your Understanding</h2>
+    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Click an option to check immediately.</p>
+
+    <!-- Q1 -->
+    <div class="question" id="q1">
+      <div class="question-text"><span class="question-num">1</span> You write <code>export let count = $state(0)</code> in a <code>.svelte.ts</code> file and import it in two components. Component A does <code>count += 1</code>. Does component B see the change?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q1',true)"><span class="option-letter">A</span> No &mdash; $state transformations are per-file. The importer gets a snapshot, not the reactive binding.</div>
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">B</span> Yes &mdash; module-level $state is shared by reference across all importers.</div>
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">C</span> It depends on whether the file uses .svelte.ts or .ts.</div>
+      </div>
+      <div class="feedback wrong" id="q1-wrong">The Svelte compiler transforms <code>$state</code> into getter/setter wrappers, but those wrappers only work <em>inside</em> the file that declares them. An ES module <code>import</code> binds to the original value, not the wrapper. Export an object and mutate properties instead.</div>
+      <div class="feedback correct" id="q1-correct">Correct. Exporting a reassignable <code>$state</code> primitive is a trap. The compiler's getter/setter magic is per-file &mdash; importers get the raw value at import time. Always export an object or class instance.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question" id="q2">
+      <div class="question-text"><span class="question-num">2</span> You call <code>setContext('user', data.user)</code> in <code>+layout.svelte</code>. In a deeply nested child, you call <code>getContext('user')</code> inside a button's <code>onclick</code> handler. What happens?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">A</span> It works &mdash; getContext can be called anywhere.</div>
+        <div class="option" onclick="answer(this,'q2',true)"><span class="option-letter">B</span> It throws &mdash; getContext must be called during component initialization, not in event handlers.</div>
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">C</span> It returns undefined silently.</div>
+      </div>
+      <div class="feedback wrong" id="q2-wrong"><code>getContext</code> (and all context functions) must be called synchronously during component initialization &mdash; that is, at the top level of the <code>&lt;script&gt;</code> block. Call it at init and store the result in a variable; then use that variable in your handler.</div>
+      <div class="feedback correct" id="q2-correct">Correct. <code>getContext</code> must be called during component initialization. The fix: <code>const user = getContext('user')</code> at the top of <code>&lt;script&gt;</code>, then use <code>user</code> in the handler.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question" id="q3">
+      <div class="question-text"><span class="question-num">3</span> You pass a <code>$state</code> object via context: <code>setContext('counter', $state({ count: 0 }))</code>. A child reads it and the parent later does <code>counter = { count: 99 }</code>. Does the child update?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">A</span> Yes &mdash; $state reactivity propagates through context automatically.</div>
+        <div class="option" onclick="answer(this,'q3',true)"><span class="option-letter">B</span> No &mdash; reassigning the whole object breaks the link. The child still holds the old proxy.</div>
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">C</span> It depends on whether createContext or setContext was used.</div>
+      </div>
+      <div class="feedback wrong" id="q3-wrong">When you reassign the variable, you create a new proxy object. The child still holds a reference to the <em>original</em> proxy. The fix: <code>counter.count = 99</code> &mdash; mutate properties, never reassign the whole object.</div>
+      <div class="feedback correct" id="q3-correct">Correct. The child holds a reference to the original proxy. Reassigning the parent's variable creates a <em>different</em> proxy that the child knows nothing about. Always mutate properties (<code>counter.count = 99</code>).</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question" id="q4">
+      <div class="question-text"><span class="question-num">4</span> You have a theme toggle (dark/light mode) needed by every component in the app. It's a client-only concern. Which pattern fits best?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">A</span> Context API &mdash; set it in the root layout.</div>
+        <div class="option" onclick="answer(this,'q4',true)"><span class="option-letter">B</span> Module state in a <code>.svelte.ts</code> file &mdash; import wherever needed.</div>
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">C</span> Props &mdash; pass the theme down from the root layout.</div>
+      </div>
+      <div class="feedback wrong" id="q4-wrong">Context would work but is overkill for a true global singleton. Props would require drilling through every intermediate component. Module state in a <code>.svelte.ts</code> file is the simplest: one import, no setup, no hierarchy dependency.</div>
+      <div class="feedback correct" id="q4-correct">Correct. A client-only global singleton is the textbook case for module state. One <code>.svelte.ts</code> file, import anywhere. No provider component needed, no hierarchy to thread through.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question" id="q5">
+      <div class="question-text"><span class="question-num">5</span> You're building a reusable <code>&lt;DataTable&gt;</code> component. It needs to share selection state with its child <code>&lt;DataRow&gt;</code> components. You might render two <code>&lt;DataTable&gt;</code>s on the same page. Which pattern?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">A</span> Module state &mdash; export a shared selection set from a <code>.svelte.ts</code> file.</div>
+        <div class="option" onclick="answer(this,'q5',true)"><span class="option-letter">B</span> Context API &mdash; each <code>&lt;DataTable&gt;</code> sets its own context, isolating the two instances.</div>
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">C</span> Props &mdash; pass the selection set down to each <code>&lt;DataRow&gt;</code>.</div>
+      </div>
+      <div class="feedback wrong" id="q5-wrong">Module state is a singleton &mdash; both tables would share the same selection, which is a bug. Props would work but get awkward when rows are nested inside intermediaries (headers, groups, etc.). Context isolates each table instance naturally: each <code>&lt;DataTable&gt;</code> calls <code>setContext</code>, and its own <code>&lt;DataRow&gt;</code> children read only <em>their</em> table's context.</div>
+      <div class="feedback correct" id="q5-correct">Correct. The key insight: context is <strong>per-instance</strong>. Each <code>&lt;DataTable&gt;</code> creates its own context, so two tables on the same page have isolated selection state. Module state can't do this &mdash; it's a singleton.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question" id="q6">
+      <div class="question-text"><span class="question-num">6</span> What advantage does <code>createContext&lt;T&gt;()</code> have over <code>setContext(key, value)</code>?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">A</span> It makes the context reactive automatically.</div>
+        <div class="option" onclick="answer(this,'q6',true)"><span class="option-letter">B</span> It provides type safety and eliminates the risk of string key typos.</div>
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">C</span> It allows context to be set outside component initialization.</div>
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">D</span> It makes context available globally, not just in the subtree.</div>
+      </div>
+      <div class="feedback wrong" id="q6-wrong">Reactivity depends on whether you pass a <code>$state</code> object, not on which API you use. The timing rule (must call during init) still applies. And context is always subtree-scoped. The win is <strong>type safety</strong>: the generic parameter types the getter's return value, and there are no string keys to mistype.</div>
+      <div class="feedback correct" id="q6-correct">Correct. <code>createContext&lt;T&gt;()</code> generates a unique key internally (no strings to typo) and the getter returns <code>T</code> (no manual type assertion). It also throws if no parent set it, rather than returning a silent <code>undefined</code>.</div>
+    </div>
+
+    <button class="score-btn" onclick="showScore()">Show my score</button>
+    <div class="quiz-score" id="quiz-score"></div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- EXERCISES                                    -->
+  <!-- ============================================ -->
+  <div class="exercises">
+    <h2>Hands-On Exercises</h2>
+    <p>These exercises build real shared-state patterns into your project. Each one is small but teaches a distinct technique.</p>
+
+    <!-- Exercise 1: Module State -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 1</span>
+        <span class="exercise-title">Create a notification toast with module state</span>
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1rem;">Build a tiny notification system: a <code>.svelte.ts</code> module that any component can import to push a toast message, and a <code>&lt;Toast&gt;</code> component that displays them.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1a">
+        <label for="e1a">Create <code>src/lib/state/toasts.svelte.ts</code>:</label>
+      </div>
+      <pre><code><span class="kw">class</span> <span class="ty">ToastState</span> {
+  <span class="pr">items</span> <span class="op">=</span> <span class="rune">$state</span><span class="op">&lt;</span>{ <span class="pr">id</span><span class="op">:</span> <span class="ty">number</span>; <span class="pr">message</span><span class="op">:</span> <span class="ty">string</span> }[]<span class="op">&gt;</span>([]);
+  <span class="pr">nextId</span> <span class="op">=</span> <span class="op">0</span>;
+
+  <span class="fn">push</span>(<span class="pr">message</span><span class="op">:</span> <span class="ty">string</span>, <span class="pr">durationMs</span> <span class="op">=</span> <span class="op">3000</span>) {
+    <span class="kw">const</span> <span class="pr">id</span> <span class="op">=</span> <span class="kw">this</span>.<span class="pr">nextId</span><span class="op">++</span>;
+    <span class="kw">this</span>.<span class="pr">items</span> <span class="op">=</span> [...<span class="kw">this</span>.<span class="pr">items</span>, { <span class="pr">id</span>, <span class="pr">message</span> }];
+    <span class="fn">setTimeout</span>(() <span class="op">=&gt;</span> <span class="kw">this</span>.<span class="fn">dismiss</span>(<span class="pr">id</span>), <span class="pr">durationMs</span>);
+  }
+
+  <span class="fn">dismiss</span>(<span class="pr">id</span><span class="op">:</span> <span class="ty">number</span>) {
+    <span class="kw">this</span>.<span class="pr">items</span> <span class="op">=</span> <span class="kw">this</span>.<span class="pr">items</span>.<span class="fn">filter</span>(<span class="pr">t</span> <span class="op">=&gt;</span> <span class="pr">t</span>.<span class="pr">id</span> <span class="op">!==</span> <span class="pr">id</span>);
+  }
+}
+
+<span class="kw">export const</span> <span class="pr">toasts</span> <span class="op">=</span> <span class="kw">new</span> <span class="ty">ToastState</span>();</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1b">
+        <label for="e1b">Create <code>src/components/Toast.svelte</code> that renders the toast list:</label>
+      </div>
+      <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="pr">toasts</span> } <span class="kw">from</span> <span class="str">'$lib/state/toasts.svelte'</span>;
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+{<span class="op">#</span><span class="kw">if</span> <span class="pr">toasts</span>.<span class="pr">items</span>.<span class="pr">length</span> <span class="op">&gt;</span> <span class="op">0</span>}
+  <span class="op">&lt;</span><span class="kw">div</span> <span class="pr">class</span><span class="op">=</span><span class="str">"toast-container"</span><span class="op">&gt;</span>
+    {<span class="op">#</span><span class="kw">each</span> <span class="pr">toasts</span>.<span class="pr">items</span> <span class="kw">as</span> <span class="pr">toast</span> (<span class="pr">toast</span>.<span class="pr">id</span>)}
+      <span class="op">&lt;</span><span class="kw">div</span> <span class="pr">class</span><span class="op">=</span><span class="str">"toast"</span><span class="op">&gt;</span>
+        {<span class="pr">toast</span>.<span class="pr">message</span>}
+        <span class="op">&lt;</span><span class="kw">button</span> <span class="pr">onclick</span><span class="op">={() =&gt;</span> <span class="pr">toasts</span>.<span class="fn">dismiss</span>(<span class="pr">toast</span>.<span class="pr">id</span>)<span class="op">}&gt;</span>&times;<span class="op">&lt;/</span><span class="kw">button</span><span class="op">&gt;</span>
+      <span class="op">&lt;/</span><span class="kw">div</span><span class="op">&gt;</span>
+    {<span class="op">/</span><span class="kw">each</span>}
+  <span class="op">&lt;/</span><span class="kw">div</span><span class="op">&gt;</span>
+{<span class="op">/</span><span class="kw">if</span>}</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1c">
+        <label for="e1c">Add <code>&lt;Toast /&gt;</code> to your root <code>+layout.svelte</code> so it's always visible.</label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1d">
+        <label for="e1d">Import <code>toasts</code> in any page and trigger one: <code>toasts.push('Image uploaded!')</code>. Confirm it appears and auto-dismisses.</label>
+      </div>
+
+      <div class="verify-box">
+        <strong>&#10003; Verified when:</strong> Calling <code>toasts.push('hello')</code> from <em>any</em> component shows a toast that auto-dismisses after 3 seconds. Two different pages can both trigger toasts and they all appear in the same container. This is module state in action &mdash; one global instance, any component can write to it.
+      </div>
+    </div>
+
+    <!-- Exercise 2: Context API -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 2</span>
+        <span class="exercise-title">Share auth state via createContext</span>
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1rem;">Right now your protected layout passes <code>data.user</code> as props or reads it from <code>data</code> directly. Refactor it to use the Context API so any deeply nested component can access the logged-in user without prop drilling.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2a">
+        <label for="e2a">Create <code>src/lib/context/auth.ts</code> (note: <strong>not</strong> <code>.svelte.ts</code> &mdash; no runes needed here, just the context pair):</label>
+      </div>
+      <pre><code><span class="kw">import</span> { <span class="fn">createContext</span> } <span class="kw">from</span> <span class="str">'svelte'</span>;
+<span class="kw">import type</span> { <span class="ty">AuthTokenPayload</span> } <span class="kw">from</span> <span class="str">'$lib/types/auth'</span>;
+
+<span class="kw">export const</span> [<span class="fn">getAuth</span>, <span class="fn">setAuth</span>] <span class="op">=</span> <span class="fn">createContext</span><span class="op">&lt;</span><span class="ty">AuthTokenPayload</span><span class="op">&gt;</span>();</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2b">
+        <label for="e2b">In <code>src/routes/(protected)/+layout.svelte</code>, call <code>setAuth(data.user)</code> during initialization:</label>
+      </div>
+      <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">setAuth</span> } <span class="kw">from</span> <span class="str">'$lib/context/auth'</span>;
+
+  <span class="kw">let</span> { <span class="pr">data</span>, <span class="pr">children</span> } <span class="op">=</span> <span class="rune">$props</span>();
+  <span class="fn">setAuth</span>(<span class="pr">data</span>.<span class="pr">user</span>);
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+{<span class="op">@</span><span class="kw">render</span> <span class="fn">children</span>()}</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2c">
+        <label for="e2c">In a descendant page (e.g. the admin users page or dashboard), replace <code>data.user</code> with <code>getAuth()</code>:</label>
+      </div>
+      <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">getAuth</span> } <span class="kw">from</span> <span class="str">'$lib/context/auth'</span>;
+
+  <span class="kw">const</span> <span class="pr">user</span> <span class="op">=</span> <span class="fn">getAuth</span>();
+  <span class="cm">// user is fully typed as AuthTokenPayload</span>
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+<span class="op">&lt;</span><span class="kw">p</span><span class="op">&gt;</span>Logged in as: {<span class="pr">user</span>.<span class="pr">name</span>}<span class="op">&lt;/</span><span class="kw">p</span><span class="op">&gt;</span></code></pre>
+
+      <div class="verify-box">
+        <strong>&#10003; Verified when:</strong> The page still displays the correct user info. Check that TypeScript is happy (no type assertions needed). Try calling <code>getAuth()</code> from a component <em>outside</em> the <code>(protected)</code> group &mdash; it should throw, confirming that context is scoped to the subtree.
+      </div>
+    </div>
+
+    <!-- Exercise 3: Context + reactive state -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 3</span>
+        <span class="exercise-title">Reactive context: a page-level edit mode</span>
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1rem;">Build a small reactive context pattern: a parent page provides an "edit mode" toggle, and child components react to it without props.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3a">
+        <label for="e3a">Create <code>src/lib/context/edit-mode.ts</code>:</label>
+      </div>
+      <pre><code><span class="kw">import</span> { <span class="fn">createContext</span> } <span class="kw">from</span> <span class="str">'svelte'</span>;
+
+<span class="kw">interface</span> <span class="ty">EditMode</span> {
+  <span class="pr">active</span><span class="op">:</span> <span class="ty">boolean</span>;
+  <span class="fn">toggle</span><span class="op">:</span> () <span class="op">=&gt;</span> <span class="kw">void</span>;
+}
+
+<span class="kw">export const</span> [<span class="fn">getEditMode</span>, <span class="fn">setEditMode</span>] <span class="op">=</span> <span class="fn">createContext</span><span class="op">&lt;</span><span class="ty">EditMode</span><span class="op">&gt;</span>();</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3b">
+        <label for="e3b">In a parent page, create the state and set the context:</label>
+      </div>
+      <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">setEditMode</span> } <span class="kw">from</span> <span class="str">'$lib/context/edit-mode'</span>;
+
+  <span class="kw">let</span> <span class="pr">editMode</span> <span class="op">=</span> <span class="rune">$state</span>({ <span class="pr">active</span><span class="op">:</span> <span class="kw">false</span>, <span class="fn">toggle</span>() { <span class="kw">this</span>.<span class="pr">active</span> <span class="op">=</span> <span class="op">!</span><span class="kw">this</span>.<span class="pr">active</span>; } });
+  <span class="fn">setEditMode</span>(<span class="pr">editMode</span>);
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+<span class="op">&lt;</span><span class="kw">button</span> <span class="pr">onclick</span><span class="op">={() =&gt;</span> <span class="pr">editMode</span>.<span class="fn">toggle</span>()<span class="op">}&gt;</span>
+  {<span class="pr">editMode</span>.<span class="pr">active</span> <span class="op">?</span> <span class="str">'Exit Edit Mode'</span> <span class="op">:</span> <span class="str">'Enter Edit Mode'</span>}
+<span class="op">&lt;/</span><span class="kw">button</span><span class="op">&gt;</span></code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3c">
+        <label for="e3c">In a child component, read the context and conditionally show edit controls:</label>
+      </div>
+      <pre><code><span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">getEditMode</span> } <span class="kw">from</span> <span class="str">'$lib/context/edit-mode'</span>;
+
+  <span class="kw">const</span> <span class="pr">edit</span> <span class="op">=</span> <span class="fn">getEditMode</span>();
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+
+{<span class="op">#</span><span class="kw">if</span> <span class="pr">edit</span>.<span class="pr">active</span>}
+  <span class="op">&lt;</span><span class="kw">div</span> <span class="pr">class</span><span class="op">=</span><span class="str">"edit-controls"</span><span class="op">&gt;</span>
+    <span class="op">&lt;</span><span class="kw">button</span><span class="op">&gt;</span>Delete<span class="op">&lt;/</span><span class="kw">button</span><span class="op">&gt;</span>
+    <span class="op">&lt;</span><span class="kw">button</span><span class="op">&gt;</span>Rename<span class="op">&lt;/</span><span class="kw">button</span><span class="op">&gt;</span>
+  <span class="op">&lt;/</span><span class="kw">div</span><span class="op">&gt;</span>
+{<span class="op">/</span><span class="kw">if</span>}
+
+<span class="cm">&lt;!-- Child can also toggle: --&gt;</span>
+<span class="op">&lt;</span><span class="kw">button</span> <span class="pr">onclick</span><span class="op">={() =&gt;</span> <span class="pr">edit</span>.<span class="fn">toggle</span>()<span class="op">}&gt;</span>
+  {<span class="pr">edit</span>.<span class="pr">active</span> <span class="op">?</span> <span class="str">'Done'</span> <span class="op">:</span> <span class="str">'Edit'</span>}
+<span class="op">&lt;/</span><span class="kw">button</span><span class="op">&gt;</span></code></pre>
+
+      <div class="verify-box">
+        <strong>&#10003; Verified when:</strong> Clicking the toggle in <em>either</em> the parent or child shows/hides the edit controls in the child. Both components stay in sync because they share the same <code>$state</code> proxy via context. The child didn't receive any props &mdash; it pulled the state from the component tree.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Summary -->
+  <h2>What You Learned</h2>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <h4>New Concepts</h4>
+      <ul>
+        <li><code>.svelte.ts</code> module state (class &amp; object patterns)</li>
+        <li>The "can't export a reassignable $state" rule</li>
+        <li><code>$state.raw</code> for large, read-mostly data</li>
+        <li>SSR module state isolation risk</li>
+        <li><code>setContext</code> / <code>getContext</code> / <code>hasContext</code></li>
+        <li><code>createContext&lt;T&gt;()</code> (type-safe, Svelte 5.40+)</li>
+        <li>Reactive context via <code>$state</code> objects</li>
+        <li>The "broken link" trap (reassign vs mutate)</li>
+        <li>Context is per-instance, not global</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h4>Decision Rules</h4>
+      <ul>
+        <li>Local only &rarr; local <code>$state</code></li>
+        <li>One hop &rarr; props</li>
+        <li>Subtree, per-instance, SSR-safe &rarr; Context</li>
+        <li>App-wide, client-only &rarr; module state</li>
+        <li>New code &rarr; prefer <code>createContext</code></li>
+        <li>Reactive context &rarr; pass <code>$state</code> object, never reassign</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout teacher" style="margin-top:2rem;">
+    <div class="callout-title">Ask your teacher</div>
+    Good follow-up questions to explore with the agent:
+    <ul style="margin-top:0.5rem;padding-left:1.25rem;">
+      <li>How would I combine context with <code>$derived</code> to create computed values that flow through the tree?</li>
+      <li>How does <code>getAllContexts()</code> work in practice &mdash; when would I use it?</li>
+      <li>Should I use context or module state for an app-wide "current page title" that changes per route?</li>
+      <li>How do I test components that depend on context?</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+  const answers = {};
+
+  function answer(el, qid, isCorrect) {
+    if (answers[qid] !== undefined) return;
+    answers[qid] = isCorrect ? 1 : 0;
+    const options = el.closest('.question').querySelectorAll('.option');
+    options.forEach(o => o.classList.add('disabled'));
+    if (isCorrect) {
+      el.classList.add('correct');
+      document.getElementById(qid + '-correct').classList.add('show');
+    } else {
+      el.classList.add('wrong');
+      document.getElementById(qid + '-wrong').classList.add('show');
+      // find correct option and highlight it
+      const allOpts = Array.from(options);
+      allOpts.forEach(o => {
+        const handler = o.getAttribute('onclick');
+        if (handler && handler.includes('true')) {
+          o.classList.add('correct');
+          o.classList.remove('disabled');
+        }
+      });
+    }
+  }
+
+  function showScore() {
+    const total = 6;
+    const score = Object.values(answers).reduce((a, b) => a + b, 0);
+    const unanswered = total - Object.keys(answers).length;
+    const pct = Math.round((score / total) * 100);
+    let msg = pct === 100 ? 'Perfect. You have a clear mental model of when to use each sharing pattern.'
+      : pct >= 80 ? 'Solid. Review the ones you missed, then do the exercises.'
+      : pct >= 60 ? 'Good start. Re-read the SSR warning and the "broken link" trap before the exercises.'
+      : 'Re-read the lesson, especially the decision flowchart, before coding.';
+    const el = document.getElementById('quiz-score');
+    el.innerHTML = `<div style="font-size:1.4rem;margin-bottom:0.4rem;">${score}/${total} &nbsp;(${pct}%)</div><div style="font-weight:400;color:var(--muted)">${msg}${unanswered ? ` (${unanswered} unanswered)` : ''}</div>`;
+    el.classList.add('show');
+  }
+</script>
+</body>
+</html>

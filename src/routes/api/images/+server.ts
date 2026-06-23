@@ -52,14 +52,20 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 		return json({ error: 'Only PNG, JPG, JPEG, GIF and WEBP images are allowed.' }, { status: 400 });
 	}
 
-	const safeName = originalName.replace(/\s+/g, '-');
-	const filename = `${crypto.randomUUID()}-${safeName}`;
-	const destination = getImagePath(filename);
+	try {
+		const safeName = originalName.replace(/\s+/g, '-');
+		const filename = `${crypto.randomUUID()}-${safeName}`;
+		const destination = getImagePath(filename);
 
-	await ensureStorage();
-	await fs.writeFile(destination, Buffer.from(await uploaded.arrayBuffer()));
+		await ensureStorage();
+		await fs.writeFile(destination, Buffer.from(await uploaded.arrayBuffer()));
 
-	return json({ message: 'Image uploaded.', filename, url: `${url.origin}/images/${encodeURIComponent(filename)}` });
+		return json({ message: 'Image uploaded.', filename, url: `${url.origin}/images/${encodeURIComponent(filename)}` });
+	}
+	catch (e) {
+		const message = e instanceof Error ? e.message : 'Upload failed';
+		return json({ error: message }, { status: 500 });
+	}
 };
 
 export const DELETE: RequestHandler = async ({ request, cookies }) => {
