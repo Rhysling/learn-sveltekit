@@ -52,19 +52,28 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 		return json({ error: 'Only PNG, JPG, JPEG, GIF and WEBP images are allowed.' }, { status: 400 });
 	}
 
-	try {
-		const safeName = originalName.replace(/\s+/g, '-');
-		const filename = `${crypto.randomUUID()}-${safeName}`;
-		const destination = getImagePath(filename);
+	const safeName = originalName.replace(/\s+/g, '-');
+	const filename = `${crypto.randomUUID()}-${safeName}`;
+	const destination = getImagePath(filename);
 
+	try {
 		await ensureStorage();
-		await fs.writeFile(destination, Buffer.from(await uploaded.arrayBuffer()));
+		const buffer = Buffer.from(await uploaded.arrayBuffer());
+		await fs.writeFile(destination, buffer);
 
 		return json({ message: 'Image uploaded.', filename, url: `${url.origin}/images/${encodeURIComponent(filename)}` });
 	}
 	catch (e) {
-		const message = e instanceof Error ? e.message : 'Upload failed';
-		return json({ error: message }, { status: 500 });
+		const detail = {
+			error: e instanceof Error ? e.message : 'Upload failed - not Error instance',
+			code: e instanceof Error && 'code' in e ? (e as NodeJS.ErrnoException).code : undefined,
+			originalName,
+			extension,
+			size: uploaded.size,
+			destination
+		};
+		console.error('Image upload failed:', detail);
+		return json(detail, { status: 500 });
 	}
 };
 

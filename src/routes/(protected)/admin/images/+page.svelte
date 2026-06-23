@@ -36,7 +36,13 @@
 			selectedFile = null;
 			await invalidate("/api/images");
 		} else {
-			uploadMessage = result.error || "Upload failed.";
+			const parts = [result.error || "Upload failed - no result.error."];
+			if (result.code) parts.push(`Code: ${result.code}`);
+			if (result.originalName) parts.push(`File: ${result.originalName}`);
+			if (result.size != null)
+				parts.push(`Size: ${(result.size / 1024 / 1024).toFixed(2)} MB`);
+			if (result.destination) parts.push(`Dest: ${result.destination}`);
+			uploadMessage = parts.join(" | ");
 		}
 	}
 
