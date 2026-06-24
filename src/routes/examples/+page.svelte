@@ -17,6 +17,7 @@
 			<li><a href="/examples/notes">Notes form example</a></li>
 			<li><a href="/examples/loader">Loader playpen</a></li>
 			<li><a href="/examples/context-experiments">Context Experiments</a></li>
+			<li><a href="/examples/reactive-patterns">Reactive Patterns</a></li>
 		</ul>
 		<p class="placeholder">More examples are coming soon.</p>
 	</section>

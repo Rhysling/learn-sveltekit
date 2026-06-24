@@ -120,6 +120,18 @@
 						path: "/examples/loader",
 						children: [],
 					},
+					{
+						title: "Context Experiments",
+						description: "Play with context.",
+						path: "/examples/context-experiments",
+						children: [],
+					},
+					{
+						title: "Reactive Patterns",
+						description: "Play with reactive patterns.",
+						path: "/examples/reactive-patterns",
+						children: [],
+					},
 				],
 			},
 			{
