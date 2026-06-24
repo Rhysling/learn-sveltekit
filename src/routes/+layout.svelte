@@ -1,5 +1,6 @@
 <script lang="ts">
 	import "$lib/styles/global.scss";
+	import { PUBLIC_APP_NAME } from "$env/static/public";
 	import type { RouteData } from "$lib/types/auth";
 	import UserStatus from "$components/UserStatus.svelte";
 	import SiteMap from "$components/SiteMap.svelte";
@@ -14,7 +15,7 @@
 			{#if data.currentPath === "/"}
 				SvelteKit + SQLite Tutorials
 			{:else}
-				<a href="/">SvelteKit + SQLite Tutorials</a>
+				<a href="/">{PUBLIC_APP_NAME}</a>
 			{/if}
 		</div>
 
@@ -22,7 +23,6 @@
 			<UserStatus {data} />
 		{/if}
 	</nav>
-
 	<SiteMap />
 
 	{@render children()}

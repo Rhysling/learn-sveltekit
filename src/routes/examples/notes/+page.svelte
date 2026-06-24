@@ -36,7 +36,10 @@
 				<div>{n.body}</div>
 				<div class="dt">{n.createdAt.toISOString()}</div>
 			</div>
-			<div>{n.author?.name || "Missing"}</div>
+			<div>
+				{n.author?.name || "Missing"}
+				{n.author?.isAdmin ? "IsAdmin" : "NoAdmin"}
+			</div>
 			<div>
 				<form method="POST" action="?/delete" use:enhance>
 					<input type="hidden" name="id" value={n.id} />

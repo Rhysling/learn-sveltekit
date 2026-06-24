@@ -1,7 +1,10 @@
+import { env } from "$env/dynamic/private";
+import { dev } from "$app/environment";
+
 import fs from 'fs/promises';
 import path from 'path';
 
-const storagePath = process.env.IMAGE_STORAGE_PATH ?? (process.env.NODE_ENV === 'production' ? '/data/uploads' : './uploads');
+const storagePath = env.IMAGE_STORAGE_PATH ?? (dev ? "./uploads" : "/data/uploads");
 
 export async function ensureStorage() {
 	await fs.mkdir(storagePath, { recursive: true });

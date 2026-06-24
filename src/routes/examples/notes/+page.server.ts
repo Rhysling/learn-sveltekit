@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	return {
 		notes: await prisma.note.findMany({
 			include:
-				{ author: { select: { name: true } } },
+				{ author: { omit: { password: true } } },
 			orderBy: { id: "desc" }
 		})
 	}

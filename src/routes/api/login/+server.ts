@@ -1,5 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import prisma from '$lib/server/db';
+import { dev } from "$app/environment";
 import { createToken, verifyPassword } from '$lib/server/auth';
 import type { LoginRequestBody, AuthResponse } from '$lib/types/auth';
 
@@ -28,7 +29,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	cookies.set('token', token, {
 		httpOnly: true,
 		path: '/',
-		secure: process.env.NODE_ENV === 'production',
+		secure: !dev,
 		maxAge: 60 * 60 * 24 * 7
 	});
 
