@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tempStore } from "$lib/context/temperature-store.svelte";
 	let total = 100;
 	let spent = $state(0);
 
@@ -80,6 +81,12 @@
 		<div class="group-title">Using Class</div>
 		<div>c: <input type="number" bind:value={temp.celsius} /></div>
 		<div>f: <input type="number" bind:value={temp.farenheit} /></div>
+	</div>
+
+	<div class="group">
+		<div class="group-title">Using tempStore</div>
+		<div>c: <input type="number" bind:value={tempStore.celsius} /></div>
+		<div>f: <input type="number" bind:value={tempStore.farenheit} /></div>
 	</div>
 </div>
 
