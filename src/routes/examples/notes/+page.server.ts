@@ -8,12 +8,16 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) throw redirect(303, `/login?redirectTo=${encodeURIComponent(url.pathname)}`);
 
 	return {
-		notes: await prisma.note.findMany()
+		notes: await prisma.note.findMany({
+			include:
+				{ author: { select: { name: true } } },
+			orderBy: { id: "desc" }
+		})
 	}
 };
 
 export const actions: Actions = {
-	add: async ({ request }) => {
+	add: async ({ request, locals }) => {
 		const data = await request.formData();
 		const body = String(data.get('body') ?? '').trim();
 
@@ -22,7 +26,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'Note body is required.', body });
 		}
 
-		await prisma.note.create({ data: { body } });
+		await prisma.note.create({ data: { body, authorId: locals.user?.userId } });
 	},
 
 	delete: async ({ request }) => {

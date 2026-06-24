@@ -2,6 +2,8 @@
 	import type { PageProps } from "./$types";
 	import { enhance } from "$app/forms";
 	import { untrack } from "svelte";
+	import { toasts } from "$lib/state/toasts.svelte";
+
 	let { data, form }: PageProps = $props();
 
 	let isSubmitting = $state(false);
@@ -9,6 +11,8 @@
 	let charCount = $derived(body.length);
 	const LIMIT = 20;
 	let isOverLimit = $derived(charCount > LIMIT);
+
+	let toastSeq = $state(0);
 
 	$effect(() => {
 		document.title =
@@ -24,6 +28,7 @@
 	<div class="note-box">
 		<div>Id</div>
 		<div>Note</div>
+		<div>Author</div>
 		<div>&nbsp;</div>
 		{#each data.notes as n}
 			<div>{n.id}</div>
@@ -31,6 +36,7 @@
 				<div>{n.body}</div>
 				<div class="dt">{n.createdAt.toISOString()}</div>
 			</div>
+			<div>{n.author?.name || "Missing"}</div>
 			<div>
 				<form method="POST" action="?/delete" use:enhance>
 					<input type="hidden" name="id" value={n.id} />
@@ -64,13 +70,22 @@
 		</button>
 		<button
 			type="button"
-			onclick={() => {
+			onclick={(e) => {
+				e.preventDefault();
 				body = "";
 			}}
 			disabled={isSubmitting}
 		>
 			Clear
 		</button>
+		<button
+			type="button"
+			onclick={(e) => {
+				e.preventDefault();
+				toasts.push(`Hello ${toastSeq}`, 4000);
+				toastSeq += 1;
+			}}>Toast</button
+		>
 	</form>
 </div>
 
@@ -85,7 +100,7 @@
 	}
 	.note-box {
 		display: grid;
-		grid-template-columns: 0.5fr 5fr 2fr;
+		grid-template-columns: 0.5fr 5fr 2fr 2fr;
 		gap: 0.5rem;
 		margin-top: 1rem;
 		padding: 1rem;

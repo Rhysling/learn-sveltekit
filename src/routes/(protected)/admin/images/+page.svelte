@@ -5,6 +5,7 @@
 	let { data } = $props() as { data: RouteDataImg };
 	let selectedFile: File | null = $state(null);
 	let uploadMessage = $state("");
+	let fileInput = $state<HTMLInputElement | undefined>(undefined);
 
 	//console.log($state.snapshot(data));
 
@@ -41,6 +42,7 @@
 		if (response.ok) {
 			uploadMessage = "Upload succeeded.";
 			selectedFile = null;
+			if (fileInput) fileInput.value = "";
 			await invalidate("/api/images");
 		} else {
 			const parts = [result.error || "Upload failed - no result error."];
@@ -90,6 +92,7 @@
 				id="image"
 				type="file"
 				accept="image/*"
+				bind:this={fileInput}
 				onchange={handleFileChange}
 			/>
 			<button type="submit" disabled={!selectedFile}>Upload image</button>

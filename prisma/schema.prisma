@@ -16,10 +16,13 @@ model User {
   lastLoginAt DateTime @default(now())
   isAdmin     Boolean  @default(false)
   isDisabled  Boolean  @default(false)
+  notes       Note[]
 }
 
 model Note {
   id        Int      @id @default(autoincrement())
   body      String
   createdAt DateTime @default(now())
+  author    User?    @relation(fields: [authorId], references: [id])
+  authorId  String?
 }

@@ -3,6 +3,7 @@
 	import type { RouteData } from "$lib/types/auth";
 	import UserStatus from "$components/UserStatus.svelte";
 	import SiteMap from "$components/SiteMap.svelte";
+	import Toast from "$components/Toast.svelte";
 
 	let { data, children }: { data: RouteData; children: any } = $props();
 </script>
@@ -25,9 +26,14 @@
 	<SiteMap />
 
 	{@render children()}
+	<Toast />
 </div>
 
 <style lang="scss">
+	.container {
+		position: relative;
+	}
+
 	nav {
 		padding: 1rem;
 		border-bottom: 1px solid #ddd;

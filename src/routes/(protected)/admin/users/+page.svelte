@@ -4,7 +4,8 @@
 		UserRemote,
 		LoginRequestBody,
 	} from "../../../../lib/types/auth";
-	import { page } from "$app/state";
+	//import { page } from "$app/state";
+	import { getAuth } from "$lib/context/auth";
 	import { invalidateAll } from "$app/navigation";
 	import { untrack } from "svelte";
 	import EditUser from "../users/EditUser.svelte";
@@ -12,7 +13,9 @@
 
 	let { data } = $props();
 	let userList: UserRemote[] = $state(untrack(() => data.users));
-	let currentUser: AuthTokenPayload = $derived(page.data.user);
+
+	//let currentUser: AuthTokenPayload = $derived(page.data.user);
+	const currentUser = getAuth();
 	let isListEditMode = $state(false);
 	let editingUserId = $state("");
 	let isEditPw = $state(false);
@@ -81,7 +84,6 @@
 </script>
 
 <div class="title">Admin Users</div>
-
 <div class="user-list">
 	{#each userList as user (user.id)}
 		<EditUser
