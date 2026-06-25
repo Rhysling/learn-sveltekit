@@ -13,7 +13,7 @@
 	<nav>
 		<div class="logo">
 			{#if data.currentPath === "/"}
-				SvelteKit + SQLite Tutorials
+				{PUBLIC_APP_NAME}
 			{:else}
 				<a href="/">{PUBLIC_APP_NAME}</a>
 			{/if}
