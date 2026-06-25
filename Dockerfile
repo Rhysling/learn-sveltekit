@@ -13,6 +13,7 @@ ENV NODE_ENV=production
 ENV DATABASE_URL=file:/data/sqlite.db
 ENV IMAGE_STORAGE_PATH=/data/uploads
 ENV JWT_SECRET=build-placeholder
+ENV PUBLIC_APP_NAME="SvelteKit + SQLite Tutorials"
 
 RUN npm run build
 
