@@ -17,13 +17,13 @@
 	@use "../lib/styles/custom-variables" as c;
 
 	.toast-container {
-		position: absolute;
-		top: 0.5rem;
-		right: 0.5rem;
+		position: fixed;
+		top: 2rem;
+		right: 2rem;
 
 		.toast {
 			padding: 0.4em;
-			margin: 0;
+			margin: 0 0 0.5em;
 			border: 1px solid var(--background-main);
 			border-radius: var(--radius);
 			border-color: var(--color-info);

@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { RouteData } from "$lib/types/auth";
-	let { data } = $props() as { data: RouteData };
+	import type { PageProps } from "./$types";
+	let { data }: PageProps = $props();
 </script>
 
 <div class="card">
 	<header class="hero">
 		<h1>SvelteKit Tutorial Collection</h1>
 		<p class="tagline">
-			Interactive, hands-on guides to building full-stack apps with SvelteKit.
+			{data.currentPage?.description || "Description missing."}
 		</p>
 		{#if data.user}
 			<p class="signed-in">Signed in as <strong>{data.user.email}</strong></p>
@@ -17,45 +17,20 @@
 	<section class="links">
 		<h2>Start learning</h2>
 		<ul>
-			<li>
-				<a href="/tutorials">
-					<strong>SvelteKit and Related Tutorials</strong>
-				</a>
-				<span class="desc"
-					>This is the list of tutorials available for learning SvelteKit and
-					related technologies.</span
-				>
-			</li>
-			<li>
-				<a href="/examples">
-					<strong>Examples</strong>
-				</a>
-				<span class="desc">Interactive tutorials and example projects.</span>
-			</li>
-			<li>
-				<a href="/admin">
-					<strong>Admin Dashboard</strong>
-				</a>
-				<span class="desc"
-					>A protected admin interface for managing the application.</span
-				>
-			</li>
+			{#each data.currentPage?.children ?? [] as c}
+				<li>
+					<a href={c.path}>
+						<strong>{c.title}</strong>
+					</a>
+					<span class="desc">{c.description}</span>
+				</li>
+			{/each}
 		</ul>
-		<p class="placeholder">More tutorial sequences will be added here soon.</p>
+		<p class="placeholder">More tutorial sequences will be added here.</p>
 	</section>
 </div>
 
 <style>
-	.card {
-		max-width: 680px;
-		margin: 3rem auto;
-		padding: 2rem 2.25rem;
-		border: 1px solid #e5e7eb;
-		border-radius: 16px;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-		background: #fff;
-	}
-
 	.hero {
 		margin-bottom: 2rem;
 		padding-bottom: 1.5rem;
@@ -67,7 +42,7 @@
 	}
 
 	.tagline {
-		color: #4b5563;
+		color: var(--text-secondary);
 		font-size: 1rem;
 		margin-top: 0.25rem;
 	}
@@ -75,7 +50,7 @@
 	.signed-in {
 		margin-top: 0.75rem;
 		font-size: 0.9rem;
-		color: #6b7280;
+		color: var(--text-secondary);
 	}
 
 	.links h2 {
@@ -94,26 +69,5 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.2rem;
-	}
-
-	.desc {
-		font-size: 0.9rem;
-		color: #4b5563;
-	}
-
-	.placeholder {
-		margin-top: 1.25rem;
-		font-size: 0.875rem;
-		font-style: italic;
-		color: #9ca3af;
-	}
-
-	a {
-		color: #2563eb;
-		text-decoration: none;
-	}
-
-	a:hover {
-		text-decoration: underline;
 	}
 </style>

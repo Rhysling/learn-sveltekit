@@ -20,6 +20,28 @@ a {
 	}
 }
 
+.card {
+	max-width: 680px;
+	margin: 2rem auto;
+	padding: 2rem;
+	background: var(--background-light);
+	border: 1px solid var(--main-lightest);
+	border-radius: 1rem;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+}
+
+.desc {
+	font-size: 0.9rem;
+	color: var(--text-secondary);
+}
+
+.placeholder {
+	margin-top: 1rem;
+	font-size: 0.875rem;
+	font-style: italic;
+	color: var(--text-secondary);
+}
+
 // input[type="text"]::file-selector-button {
 // 	background-color: var(--link-color);
 // 	color: var(--background-light);

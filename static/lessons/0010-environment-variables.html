@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 10: Environment Variables &amp; Config</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --orange: #ea580c;
+      --orange-light: #fff7ed;
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+      --code-prop: #f8c555;
+      --code-rune: #ff9cac;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+
+    /* Header */
+    .lesson-header { border-bottom: 2px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-tag { display: inline-block; background: var(--accent-light); color: var(--accent); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.25rem 0.75rem; border-radius: 999px; margin-bottom: 0.75rem; }
+    h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+    .lesson-subtitle { color: var(--muted); font-size: 1.05rem; }
+    .lesson-meta { display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.85rem; color: var(--muted); }
+
+    /* Typography */
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.5rem 0 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+    h2:first-of-type { border-top: none; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--accent); }
+    p { margin-bottom: 1rem; }
+    a { color: var(--accent); text-decoration: underline; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* Callouts */
+    .callout { border-left: 3px solid; padding: 0.85rem 1rem; border-radius: 0 6px 6px 0; margin: 1.25rem 0; font-size: 0.95rem; }
+    .callout-title { font-weight: 600; margin-bottom: 0.25rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .callout.vue   { background: var(--green-light);  border-color: var(--green);  }
+    .callout.vue   .callout-title { color: var(--green); }
+    .callout.note  { background: var(--accent-light); border-color: var(--accent); }
+    .callout.note  .callout-title { color: var(--accent); }
+    .callout.warn  { background: var(--yellow-light); border-color: var(--yellow); }
+    .callout.warn  .callout-title { color: var(--yellow); }
+    .callout.danger{ background: var(--red-light);    border-color: var(--red);    }
+    .callout.danger .callout-title { color: var(--red); }
+    .callout.teacher { background: var(--orange-light); border-color: var(--orange); }
+    .callout.teacher .callout-title { color: var(--orange); }
+
+    /* Code */
+    pre { background: var(--code-bg); color: var(--code-text); border-radius: 8px; padding: 1.25rem 1.5rem; overflow-x: auto; margin: 1rem 0 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; line-height: 1.65; }
+    .code-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.3rem; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: #e9eaf0; padding: 0.15em 0.4em; border-radius: 3px; }
+    pre code { background: none; padding: 0; font-size: inherit; }
+
+    .kw   { color: var(--code-keyword); }
+    .fn   { color: var(--code-fn); }
+    .str  { color: var(--code-string); }
+    .cm   { color: var(--code-comment); font-style: italic; }
+    .ty   { color: var(--code-type); }
+    .op   { color: var(--code-op); }
+    .pr   { color: var(--code-prop); }
+    .rune { color: var(--code-rune); font-weight: 500; }
+
+    /* Comparison */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0 1.5rem; }
+    .compare-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
+    .compare pre { margin: 0; font-size: 0.78rem; }
+
+    /* Quiz */
+    .quiz-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; margin: 2.5rem 0; }
+    .quiz-section h2 { border-top: none; margin-top: 0; padding-top: 0; }
+    .question { margin-bottom: 1.75rem; }
+    .question-text { font-weight: 600; margin-bottom: 0.75rem; line-height: 1.5; }
+    .question-num { display: inline-block; background: var(--accent); color: white; font-size: 0.75rem; font-weight: 700; width: 1.5rem; height: 1.5rem; line-height: 1.5rem; text-align: center; border-radius: 50%; margin-right: 0.5rem; }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; font-size: 0.95rem; }
+    .option:hover { border-color: var(--accent); background: var(--accent-light); }
+    .option.correct { background: var(--green-light); border-color: var(--green); color: var(--green); font-weight: 500; }
+    .option.wrong   { background: var(--red-light);   border-color: var(--red);   color: var(--red); }
+    .option.disabled { pointer-events: none; opacity: 0.55; }
+    .option.correct.disabled { opacity: 1; }
+    .option-letter { font-weight: 700; font-size: 0.8rem; min-width: 1.2rem; color: var(--muted); }
+    .option.correct .option-letter { color: var(--green); }
+    .option.wrong   .option-letter { color: var(--red); }
+    .feedback { font-size: 0.875rem; margin-top: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 6px; display: none; }
+    .feedback.correct { background: var(--green-light); color: var(--green); }
+    .feedback.wrong   { background: var(--red-light);   color: var(--red); }
+    .feedback.show    { display: block; }
+    .quiz-score { margin-top: 1.5rem; padding: 1rem 1.25rem; background: var(--accent-light); border-radius: 8px; font-weight: 600; display: none; }
+    .quiz-score.show { display: block; }
+    .score-btn { display: inline-block; margin-top: 1rem; padding: 0.6rem 1.4rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .score-btn:hover { opacity: 0.88; }
+
+    /* Exercises */
+    .exercises { margin-top: 2.5rem; }
+    .exercise { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; }
+    .exercise-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .exercise-num { background: var(--accent); color: white; font-size: 0.8rem; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 999px; white-space: nowrap; }
+    .exercise-title { font-weight: 700; font-size: 1rem; }
+    .exercise-check { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .exercise-check input[type="checkbox"] { margin-top: 0.2rem; accent-color: var(--accent); width: 1rem; height: 1rem; flex-shrink: 0; cursor: pointer; }
+    .exercise-check label { cursor: pointer; line-height: 1.5; }
+    .verify-box { background: var(--green-light); border-left: 3px solid var(--green); border-radius: 0 6px 6px 0; padding: 0.6rem 0.85rem; font-size: 0.875rem; margin-top: 0.75rem; color: #065f46; }
+    .verify-box strong { color: var(--green); }
+
+    /* Summary */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+    .summary-card h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.5rem; }
+    .summary-card ul { padding-left: 1.1rem; font-size: 0.9rem; }
+    .summary-card li { margin-bottom: 0.25rem; }
+
+    /* Decision table */
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.9rem; }
+    th { background: var(--accent-light); color: var(--accent); text-align: left; padding: 0.6rem 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td code { font-size: 0.82em; }
+
+    /* Diagram */
+    .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 1.25rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre; overflow-x: auto; }
+    .diagram .label { color: var(--accent); font-weight: 600; }
+    .diagram .ctx { color: var(--purple); font-weight: 500; }
+    .diagram .mod { color: var(--orange); font-weight: 500; }
+
+    /* Step boxes */
+    .step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.5rem; margin: 1.25rem 0; }
+    .step-num { display: inline-block; background: var(--accent); color: white; font-size: 0.75rem; font-weight: 700; width: 1.5rem; height: 1.5rem; line-height: 1.5rem; text-align: center; border-radius: 50%; margin-right: 0.5rem; }
+
+    /* Flow diagram specific */
+    .flow-row { display: flex; align-items: stretch; gap: 0; margin: 1.25rem 0; flex-wrap: wrap; }
+    .flow-box { flex: 1; min-width: 140px; padding: 0.85rem 1rem; text-align: center; font-size: 0.82rem; font-weight: 600; }
+    .flow-arrow { display: flex; align-items: center; font-size: 1.4rem; color: var(--muted); padding: 0 0.3rem; }
+    .flow-env   { background: var(--purple-light); color: var(--purple); border-radius: 8px 0 0 8px; }
+    .flow-vite  { background: var(--yellow-light); color: var(--yellow); }
+    .flow-kit   { background: var(--accent-light); color: var(--accent); }
+    .flow-code  { background: var(--green-light); color: var(--green); border-radius: 0 8px 8px 0; }
+
+    @media (max-width: 620px) {
+      .compare, .summary-grid { grid-template-columns: 1fr; }
+      .flow-row { flex-direction: column; align-items: center; }
+      .flow-arrow { transform: rotate(90deg); padding: 0.2rem 0; }
+      .flow-box { border-radius: 8px !important; width: 100%; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <div class="lesson-tag">Lesson 10 &middot; SvelteKit</div>
+    <h1>Environment Variables &amp; Config</h1>
+    <p class="lesson-subtitle">SvelteKit's four <code>$env</code> modules, when to use each, and how to stop using raw <code>process.env</code> in your project.</p>
+    <div class="lesson-meta">
+      <span>&#9201; ~25 min</span>
+      <span>&#128203; Quiz + 3 exercises</span>
+      <span>&#127919; Tied to: secrets handling, deployment safety, server/client boundary</span>
+    </div>
+  </header>
+
+
+  <!-- ============================================ -->
+  <!-- Where You Are                                -->
+  <!-- ============================================ -->
+  <h2>Where You Are</h2>
+
+  <p>Your project already uses environment variables &mdash; <code>DATABASE_URL</code>, <code>JWT_SECRET</code>, and <code>IMAGE_STORAGE_PATH</code> &mdash; but in two inconsistent ways:</p>
+
+  <div class="diagram"><span class="label">Current state of your project</span>
+
+<span class="mod">db.ts</span>         &rarr; <span class="ctx">import { env } from '$env/dynamic/private'</span>  &#10004;
+<span class="mod">auth.ts</span>       &rarr; <span class="ctx">import { env } from '$env/dynamic/private'</span>  &#10004;
+<span class="mod">storage.ts</span>    &rarr; <span class="ctx">process.env.IMAGE_STORAGE_PATH</span>             &#10008;
+<span class="mod">login/</span>        &rarr; <span class="ctx">process.env.NODE_ENV</span>                       &#10008;
+<span class="mod">register/</span>     &rarr; <span class="ctx">process.env.NODE_ENV</span>                       &#10008;</div>
+
+  <p>This lesson teaches you <em>why</em> the <code>$env</code> modules exist, how they differ, and gives you a framework for choosing the right one every time. By the end, you'll fix the inconsistencies above.</p>
+
+  <div class="callout vue">
+    <div class="callout-title">Vs Nuxt</div>
+    Nuxt has <code>runtimeConfig</code> (server) and <code>publicRuntimeConfig</code> (client), configured in <code>nuxt.config.ts</code> and accessed via <code>useRuntimeConfig()</code>. SvelteKit skips the config object entirely &mdash; you import directly from typed modules. The mental model is the same (private vs public, build-time vs runtime), but the mechanism is different.
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- The Problem process.env Causes               -->
+  <!-- ============================================ -->
+  <h2>Why Not Just Use <code>process.env</code>?</h2>
+
+  <p>You <em>can</em> use <code>process.env</code> in server-side SvelteKit code and it works. But it has real downsides:</p>
+
+  <ol>
+    <li><strong>No type safety.</strong> <code>process.env.JWT_SECRET</code> is <code>string | undefined</code> &mdash; TypeScript can't know if the variable exists. SvelteKit's <code>$env</code> modules generate types from your <code>.env</code> file, so you get autocompletion and compile-time errors.</li>
+    <li><strong>No server/client boundary enforcement.</strong> Nothing stops you from accidentally importing a file that reads <code>process.env</code> into a <code>.svelte</code> component. SvelteKit's private modules throw a build error if you try to import them client-side.</li>
+    <li><strong>No adapter portability.</strong> <code>process.env</code> is a Node.js API. If you ever deploy to Cloudflare Workers, Deno, or Vercel Edge, it doesn't exist. The <code>$env</code> modules abstract this away &mdash; they work across all adapters. (<a href="https://svelte.dev/docs/kit/$env-dynamic-private">Docs: $env/dynamic/private</a>)</li>
+  </ol>
+
+  <div class="callout warn">
+    <div class="callout-title">The one exception</div>
+    <code>process.env.NODE_ENV</code> is special. Vite replaces it at build time in all contexts, so it works everywhere. But it's the <em>only</em> <code>process.env</code> value you can rely on universally. For everything else, use <code>$env</code>.
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- The Four Modules                             -->
+  <!-- ============================================ -->
+  <h2>The Four <code>$env</code> Modules</h2>
+
+  <p>SvelteKit gives you four modules, organized on two axes: <strong>when</strong> the value is read (static vs dynamic) and <strong>who</strong> can see it (private vs public).</p>
+
+  <table>
+    <thead>
+      <tr><th></th><th>Private (server-only)</th><th>Public (server + client)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Static</strong><br><small>Read at build time</small></td>
+        <td><code>$env/static/private</code></td>
+        <td><code>$env/static/public</code></td>
+      </tr>
+      <tr>
+        <td><strong>Dynamic</strong><br><small>Read at runtime</small></td>
+        <td><code>$env/dynamic/private</code></td>
+        <td><code>$env/dynamic/public</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Static vs Dynamic</h3>
+
+  <p><strong>Static</strong> modules are resolved when you run <code>vite build</code>. The values are baked into the JavaScript bundle. This enables dead code elimination &mdash; if you have <code>if (env.FEATURE_FLAG === 'on')</code>, the build can strip the <code>else</code> branch entirely.</p>
+
+  <p><strong>Dynamic</strong> modules are read at runtime, every time the server starts. This means you can change an env var and restart the server without rebuilding. With <code>adapter-node</code> (which your project uses), <code>$env/dynamic/private</code> is equivalent to <code>process.env</code>. (<a href="https://svelte.dev/docs/kit/$env-dynamic-private">Docs: $env/dynamic/private</a>)</p>
+
+  <div class="compare">
+    <div>
+      <div class="compare-label">Static &mdash; baked in at build</div>
+<pre><code><span class="cm">// Values frozen when you run `vite build`</span>
+<span class="kw">import</span> { <span class="pr">API_KEY</span> } <span class="kw">from</span> <span class="str">'$env/static/private'</span>;
+
+<span class="cm">// Named exports &mdash; tree-shakeable</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="pr">API_KEY</span>);</code></pre>
+    </div>
+    <div>
+      <div class="compare-label">Dynamic &mdash; read at server start</div>
+<pre><code><span class="cm">// Values read from process.env at runtime</span>
+<span class="kw">import</span> { <span class="pr">env</span> } <span class="kw">from</span> <span class="str">'$env/dynamic/private'</span>;
+
+<span class="cm">// Object &mdash; access by key</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="pr">env</span>.<span class="pr">API_KEY</span>);</code></pre>
+    </div>
+  </div>
+
+  <p>Notice the import style difference: static modules give you <strong>named exports</strong> (one per variable), while dynamic modules give you an <strong><code>env</code> object</strong> you index into.</p>
+
+  <h3>Private vs Public</h3>
+
+  <p><strong>Private</strong> modules can only be imported in server-side files (<code>+page.server.ts</code>, <code>+server.ts</code>, <code>hooks.server.ts</code>, anything under <code>$lib/server/</code>). If you try to import them in a <code>.svelte</code> component or a universal load function, SvelteKit throws a build error. This is your safety net against leaking secrets.</p>
+
+  <p><strong>Public</strong> modules are accessible everywhere &mdash; server and client. Only variables prefixed with <code>PUBLIC_</code> (by default) are exposed through these modules. This prefix acts as a deliberate opt-in: you're saying "yes, I intend for the browser to see this."</p>
+
+  <div class="callout danger">
+    <div class="callout-title">Secret leak protection</div>
+    If you put <code>JWT_SECRET</code> in your <code>.env</code> and try to import it from <code>$env/static/public</code>, it won't be there &mdash; it doesn't have the <code>PUBLIC_</code> prefix. And if you try to import <code>$env/static/private</code> in a <code>.svelte</code> file, the build fails. Both paths are blocked. This is much safer than <code>process.env</code>, which has no guardrails.
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- How .env Files Work                          -->
+  <!-- ============================================ -->
+  <h2>How <code>.env</code> Files Work</h2>
+
+  <p>SvelteKit uses Vite's <code>.env</code> loading. During development (<code>vite dev</code>) and at build time (<code>vite build</code>), Vite reads these files from your project root:</p>
+
+  <table>
+    <thead>
+      <tr><th>File</th><th>When loaded</th><th>Git?</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>.env</code></td>
+        <td>Always</td>
+        <td>Usually <strong>no</strong> &mdash; contains real secrets</td>
+      </tr>
+      <tr>
+        <td><code>.env.local</code></td>
+        <td>Always, overrides <code>.env</code></td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <td><code>.env.development</code></td>
+        <td>Only during <code>vite dev</code></td>
+        <td>Optional</td>
+      </tr>
+      <tr>
+        <td><code>.env.production</code></td>
+        <td>Only during <code>vite build</code></td>
+        <td>Optional</td>
+      </tr>
+      <tr>
+        <td><code>.env.example</code></td>
+        <td>Never loaded &mdash; documentation only</td>
+        <td><strong>Yes</strong> &mdash; shows team what vars are needed</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Your project has both <code>.env</code> and <code>.env.example</code>. The <code>.env</code> has your actual dev values; <code>.env.example</code> is committed so collaborators know which variables to set.</p>
+
+  <div class="callout note">
+    <div class="callout-title">Important: .env in production</div>
+    In production with <code>adapter-node</code>, the built server reads from <strong>the real environment</strong> (<code>process.env</code>), not from <code>.env</code> files. The <code>.env</code> file is only used during development and build. In production, you set env vars via your hosting platform (e.g. <code>fly secrets set</code>, Vercel dashboard, Docker <code>-e</code> flags). You covered this in <a href="./0007-deployment.html">Lesson 7</a>.
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- Type Generation                              -->
+  <!-- ============================================ -->
+  <h2>Type Generation</h2>
+
+  <p>When you run <code>vite dev</code> or <code>vite build</code>, SvelteKit reads your <code>.env</code> file and generates TypeScript types for the <code>$env</code> modules. These live in <code>.svelte-kit/types/</code>.</p>
+
+  <p>This means if your <code>.env</code> contains <code>DATABASE_URL</code> and <code>JWT_SECRET</code>, you get autocomplete when importing from <code>$env/static/private</code>:</p>
+
+<pre><code><span class="cm">// TypeScript knows these exist because they're in .env</span>
+<span class="kw">import</span> { <span class="pr">DATABASE_URL</span>, <span class="pr">JWT_SECRET</span> } <span class="kw">from</span> <span class="str">'$env/static/private'</span>;
+<span class="cm">//       ^ autocomplete works here</span>
+
+<span class="cm">// This would be a TypeScript error:</span>
+<span class="kw">import</span> { <span class="pr">TYPO_VAR</span> } <span class="kw">from</span> <span class="str">'$env/static/private'</span>;
+<span class="cm">//       ^ Property 'TYPO_VAR' does not exist</span></code></pre>
+
+  <div class="callout warn">
+    <div class="callout-title">Declare vars even if empty</div>
+    If a variable isn't in your <code>.env</code> during development, it won't appear in the generated types &mdash; even if it will exist in production. Add it to your <code>.env</code> with an empty value (<code>STRIPE_KEY=""</code>) so the types are generated. You can override with real values via <code>.env.local</code> or command line: <code>STRIPE_KEY="sk_test_..." npm run dev</code>. (<a href="https://svelte.dev/docs/kit/$env-dynamic-private">Docs</a>)
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- The Decision Framework                       -->
+  <!-- ============================================ -->
+  <h2>Which Module Do I Use?</h2>
+
+  <p>Two questions get you to the right module every time:</p>
+
+  <div class="diagram"><span class="label">Decision flowchart</span>
+
+  <span class="ctx">Q1: Should the browser see this value?</span>
+    &boxvr;&boxh; Yes &rarr; it needs the <span class="mod">PUBLIC_</span> prefix &rarr; <span class="mod">public</span> module
+    &boxur;&boxh; No  &rarr; no prefix needed              &rarr; <span class="mod">private</span> module
+
+  <span class="ctx">Q2: Can the value change between deploys without rebuilding?</span>
+    &boxvr;&boxh; Yes &rarr; <span class="mod">dynamic</span> (read at runtime)
+    &boxur;&boxh; No  &rarr; <span class="mod">static</span>  (baked into bundle)</div>
+
+  <p>In practice, for apps deployed with <code>adapter-node</code>:</p>
+
+  <table>
+    <thead>
+      <tr><th>Variable</th><th>Module</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>DATABASE_URL</code></td>
+        <td><code>$env/dynamic/private</code></td>
+        <td>Secret, may differ per environment without rebuild</td>
+      </tr>
+      <tr>
+        <td><code>JWT_SECRET</code></td>
+        <td><code>$env/dynamic/private</code></td>
+        <td>Secret, must be rotatable without rebuild</td>
+      </tr>
+      <tr>
+        <td><code>IMAGE_STORAGE_PATH</code></td>
+        <td><code>$env/dynamic/private</code></td>
+        <td>Server path, varies by environment</td>
+      </tr>
+      <tr>
+        <td><code>PUBLIC_APP_NAME</code></td>
+        <td><code>$env/static/public</code></td>
+        <td>Display string, safe for browser, rarely changes</td>
+      </tr>
+      <tr>
+        <td><code>PUBLIC_API_BASE</code></td>
+        <td><code>$env/dynamic/public</code></td>
+        <td>Safe for browser, but may differ between staging/prod</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout teacher">
+    <div class="callout-title">Rule of thumb</div>
+    When in doubt, start with <code>$env/dynamic/private</code>. It's the safest default: server-only, runtime-read. You can always move to static later if you need tree-shaking, or to public if you need client access. Going the other direction (accidentally exposing a secret) is the mistake you can't undo.
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- Config Options                               -->
+  <!-- ============================================ -->
+  <h2>Config: Controlling Prefixes</h2>
+
+  <p>The <code>PUBLIC_</code> prefix and other env behavior is configured in <code>svelte.config.ts</code> under <code>kit.env</code>:</p>
+
+<pre><code><span class="cm">// svelte.config.ts</span>
+<span class="kw">const</span> config = {
+  kit: {
+    env: {
+      <span class="pr">dir</span>: <span class="str">'.'</span>,          <span class="cm">// where to find .env files (default: project root)</span>
+      <span class="pr">publicPrefix</span>: <span class="str">'PUBLIC_'</span>, <span class="cm">// default &mdash; you rarely change this</span>
+      <span class="pr">privatePrefix</span>: <span class="str">''</span>,       <span class="cm">// default &mdash; empty means "everything not public"</span>
+    }
+  }
+};</code></pre>
+
+  <p>With the default <code>privatePrefix: ''</code>, <strong>every</strong> env var without the <code>PUBLIC_</code> prefix is available in private modules. If you set <code>privatePrefix: 'SECRET_'</code>, then only vars starting with <code>SECRET_</code> would appear &mdash; and vars matching neither prefix would be <strong>discarded entirely</strong>. Most projects leave the defaults alone. (<a href="https://svelte.dev/docs/kit/configuration">Docs: Configuration</a>)</p>
+
+
+  <!-- ============================================ -->
+  <!-- Your Project: What to Fix                    -->
+  <!-- ============================================ -->
+  <h2>Your Project: What to Fix</h2>
+
+  <p>Your codebase has three files still using raw <code>process.env</code> where they should use <code>$env</code>:</p>
+
+  <h3>1. <code>src/lib/server/storage.ts</code></h3>
+
+  <div class="compare">
+    <div>
+      <div class="compare-label" style="color: var(--red);">Current (process.env)</div>
+<pre><code><span class="kw">const</span> storagePath =
+  <span class="pr">process</span>.<span class="pr">env</span>.<span class="pr">IMAGE_STORAGE_PATH</span>
+  ?? (<span class="pr">process</span>.<span class="pr">env</span>.<span class="pr">NODE_ENV</span> === <span class="str">'production'</span>
+    ? <span class="str">'/data/uploads'</span>
+    : <span class="str">'./uploads'</span>);</code></pre>
+    </div>
+    <div>
+      <div class="compare-label" style="color: var(--green);">Fixed ($env)</div>
+<pre><code><span class="kw">import</span> { <span class="pr">env</span> } <span class="kw">from</span> <span class="str">'$env/dynamic/private'</span>;
+<span class="kw">import</span> { <span class="pr">dev</span> } <span class="kw">from</span> <span class="str">'$app/environment'</span>;
+
+<span class="kw">const</span> storagePath =
+  <span class="pr">env</span>.<span class="pr">IMAGE_STORAGE_PATH</span>
+  ?? (<span class="pr">dev</span> ? <span class="str">'./uploads'</span>
+        : <span class="str">'/data/uploads'</span>);</code></pre>
+    </div>
+  </div>
+
+  <p>Note the bonus: <code>$app/environment</code> exports <code>dev</code> and <code>building</code> booleans. Use <code>dev</code> instead of checking <code>NODE_ENV</code> directly &mdash; it works on all adapters, not just Node.</p>
+
+  <h3>2. <code>src/routes/api/login/+server.ts</code> and <code>register/+server.ts</code></h3>
+
+  <p>Both files use <code>process.env.NODE_ENV === 'production'</code> for the cookie <code>secure</code> flag:</p>
+
+  <div class="compare">
+    <div>
+      <div class="compare-label" style="color: var(--red);">Current</div>
+<pre><code>cookies.<span class="fn">set</span>(<span class="str">'token'</span>, token, {
+  httpOnly: <span class="kw">true</span>,
+  path: <span class="str">'/'</span>,
+  secure: <span class="pr">process</span>.<span class="pr">env</span>.<span class="pr">NODE_ENV</span> === <span class="str">'production'</span>,
+  maxAge: 60 * 60 * 24 * 7
+});</code></pre>
+    </div>
+    <div>
+      <div class="compare-label" style="color: var(--green);">Fixed</div>
+<pre><code><span class="kw">import</span> { <span class="pr">dev</span> } <span class="kw">from</span> <span class="str">'$app/environment'</span>;
+
+cookies.<span class="fn">set</span>(<span class="str">'token'</span>, token, {
+  httpOnly: <span class="kw">true</span>,
+  path: <span class="str">'/'</span>,
+  secure: !<span class="pr">dev</span>,
+  maxAge: 60 * 60 * 24 * 7
+});</code></pre>
+    </div>
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title"><code>$app/environment</code></div>
+    This SvelteKit module exports three values: <code>dev</code> (true during <code>vite dev</code>), <code>building</code> (true during <code>vite build</code>), and <code>version</code> (from your config). It works on both server and client, on all adapters. Prefer it over <code>NODE_ENV</code> checks. (<a href="https://svelte.dev/docs/kit/$app-environment">Docs: $app/environment</a>)
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- Public Variables in Practice                 -->
+  <!-- ============================================ -->
+  <h2>Public Variables in Practice</h2>
+
+  <p>You haven't needed a public env var yet, but they come up quickly in real apps. Common use cases:</p>
+
+  <ul>
+    <li><code>PUBLIC_APP_NAME</code> &mdash; shown in the page title, footer, etc.</li>
+    <li><code>PUBLIC_API_BASE</code> &mdash; if the client calls an external API directly</li>
+    <li><code>PUBLIC_SENTRY_DSN</code> &mdash; client-side error tracking</li>
+    <li><code>PUBLIC_POSTHOG_KEY</code> &mdash; analytics</li>
+  </ul>
+
+<pre><code><span class="cm">&lt;!-- src/routes/+layout.svelte --&gt;</span>
+<span class="kw">&lt;script&gt;</span>
+  <span class="kw">import</span> { <span class="pr">PUBLIC_APP_NAME</span> } <span class="kw">from</span> <span class="str">'$env/static/public'</span>;
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="kw">&lt;footer&gt;</span>&copy; 2026 {<span class="pr">PUBLIC_APP_NAME</span>}<span class="kw">&lt;/footer&gt;</span></code></pre>
+
+  <p>Because <code>PUBLIC_APP_NAME</code> is static, it's baked into the client bundle &mdash; no network request, no flash of missing content. If you need the value to change per deployment without rebuilding, use <code>$env/dynamic/public</code> instead.</p>
+
+
+  <!-- ============================================ -->
+  <!-- Quiz                                         -->
+  <!-- ============================================ -->
+  <div class="quiz-section">
+    <h2>Knowledge Check</h2>
+
+    <div class="question" id="q1">
+      <div class="question-text"><span class="question-num">1</span> You have a <code>STRIPE_SECRET_KEY</code> that must never reach the browser. Which module?</div>
+      <div class="options">
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q1')">
+          <span class="option-letter">A</span> <code>$env/static/public</code>
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q1')">
+          <span class="option-letter">B</span> <code>$env/dynamic/public</code>
+        </div>
+        <div class="option" data-correct="true" onclick="checkAnswer(this, 'q1')">
+          <span class="option-letter">C</span> <code>$env/dynamic/private</code>
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q1')">
+          <span class="option-letter">D</span> <code>process.env</code> directly
+        </div>
+      </div>
+      <div class="feedback correct" id="q1-correct">Correct. It's a secret (private), and API keys should be rotatable without rebuilding (dynamic).</div>
+      <div class="feedback wrong" id="q1-wrong">Not quite. It's a secret &mdash; it needs a <strong>private</strong> module so SvelteKit blocks client-side imports. And since API keys should be rotatable without rebuilding, <strong>dynamic</strong> is the right choice.</div>
+    </div>
+
+    <div class="question" id="q2">
+      <div class="question-text"><span class="question-num">2</span> You want to show the app version in the footer of every page, and it only changes when you deploy a new build. Which module?</div>
+      <div class="options">
+        <div class="option" data-correct="true" onclick="checkAnswer(this, 'q2')">
+          <span class="option-letter">A</span> <code>$env/static/public</code>
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q2')">
+          <span class="option-letter">B</span> <code>$env/dynamic/private</code>
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q2')">
+          <span class="option-letter">C</span> <code>$env/static/private</code>
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q2')">
+          <span class="option-letter">D</span> <code>$env/dynamic/public</code>
+        </div>
+      </div>
+      <div class="feedback correct" id="q2-correct">Correct. It needs to be in the browser (public), and it changes only at build time (static). This is the most efficient option &mdash; the value is inlined into the bundle.</div>
+      <div class="feedback wrong" id="q2-wrong">Think again: the browser needs to display it (public), and it only changes when you deploy (static). <code>$env/static/public</code> gives you both.</div>
+    </div>
+
+    <div class="question" id="q3">
+      <div class="question-text"><span class="question-num">3</span> What happens if you try to import <code>$env/static/private</code> in a <code>+page.svelte</code> file?</div>
+      <div class="options">
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q3')">
+          <span class="option-letter">A</span> It works but the values are <code>undefined</code>
+        </div>
+        <div class="option" data-correct="true" onclick="checkAnswer(this, 'q3')">
+          <span class="option-letter">B</span> The build fails with an error
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q3')">
+          <span class="option-letter">C</span> It works fine &mdash; SvelteKit strips the values automatically
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q3')">
+          <span class="option-letter">D</span> It works in dev but fails in production
+        </div>
+      </div>
+      <div class="feedback correct" id="q3-correct">Correct. SvelteKit enforces the server/client boundary at build time. Private modules cannot be imported in client-side code &mdash; you get a clear error immediately.</div>
+      <div class="feedback wrong" id="q3-wrong">SvelteKit enforces this at <strong>build time</strong>. You get an error, not undefined values or silent stripping. This is the whole point of the private modules &mdash; they make secret leaks impossible.</div>
+    </div>
+
+    <div class="question" id="q4">
+      <div class="question-text"><span class="question-num">4</span> Your <code>.env</code> has <code>DATABASE_URL</code> and <code>PUBLIC_SITE_NAME</code>. You import from <code>$env/dynamic/public</code>. Which variables are available?</div>
+      <div class="options">
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q4')">
+          <span class="option-letter">A</span> Both &mdash; all env vars are available everywhere
+        </div>
+        <div class="option" data-correct="true" onclick="checkAnswer(this, 'q4')">
+          <span class="option-letter">B</span> Only <code>PUBLIC_SITE_NAME</code>
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q4')">
+          <span class="option-letter">C</span> Neither &mdash; dynamic modules don't read <code>.env</code> files
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q4')">
+          <span class="option-letter">D</span> Only <code>DATABASE_URL</code>
+        </div>
+      </div>
+      <div class="feedback correct" id="q4-correct">Correct. Public modules only expose variables with the <code>PUBLIC_</code> prefix. <code>DATABASE_URL</code> doesn't have it, so it's invisible to this module.</div>
+      <div class="feedback wrong" id="q4-wrong">Public modules filter by prefix. Only variables starting with <code>PUBLIC_</code> appear. <code>DATABASE_URL</code> lacks the prefix, so it's excluded &mdash; exactly the safety behavior you want.</div>
+    </div>
+
+    <div class="question" id="q5">
+      <div class="question-text"><span class="question-num">5</span> You want to check if you're in dev mode to conditionally enable verbose logging. What's the most portable way?</div>
+      <div class="options">
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q5')">
+          <span class="option-letter">A</span> <code>process.env.NODE_ENV !== 'production'</code>
+        </div>
+        <div class="option" data-correct="true" onclick="checkAnswer(this, 'q5')">
+          <span class="option-letter">B</span> <code>import { dev } from '$app/environment'</code>
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q5')">
+          <span class="option-letter">C</span> <code>import { MODE } from '$env/static/private'</code>
+        </div>
+        <div class="option" data-correct="false" onclick="checkAnswer(this, 'q5')">
+          <span class="option-letter">D</span> Check <code>window.location.hostname === 'localhost'</code>
+        </div>
+      </div>
+      <div class="feedback correct" id="q5-correct">Correct. <code>$app/environment</code>'s <code>dev</code> boolean works on all adapters, on both server and client. It's SvelteKit's own API for this exact purpose.</div>
+      <div class="feedback wrong" id="q5-wrong"><code>$app/environment</code> exports a <code>dev</code> boolean that works everywhere &mdash; server, client, any adapter. It's the SvelteKit-idiomatic way to check this.</div>
+    </div>
+
+    <button class="score-btn" onclick="showScore()">Check Score</button>
+    <div class="quiz-score" id="quiz-score"></div>
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- Exercises                                    -->
+  <!-- ============================================ -->
+  <div class="exercises">
+    <h2>Exercises</h2>
+
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 1</span>
+        <span class="exercise-title">Fix <code>storage.ts</code></span>
+      </div>
+      <p>Replace the <code>process.env</code> usage in <code>src/lib/server/storage.ts</code> with SvelteKit's <code>$env</code> module and <code>$app/environment</code>.</p>
+      <div class="exercise-check"><input type="checkbox" id="e1a"><label for="e1a">Import <code>env</code> from <code>$env/dynamic/private</code></label></div>
+      <div class="exercise-check"><input type="checkbox" id="e1b"><label for="e1b">Import <code>dev</code> from <code>$app/environment</code></label></div>
+      <div class="exercise-check"><input type="checkbox" id="e1c"><label for="e1c">Replace <code>process.env.IMAGE_STORAGE_PATH</code> with <code>env.IMAGE_STORAGE_PATH</code></label></div>
+      <div class="exercise-check"><input type="checkbox" id="e1d"><label for="e1d">Replace <code>process.env.NODE_ENV === 'production'</code> with <code>!dev</code></label></div>
+      <div class="exercise-check"><input type="checkbox" id="e1e"><label for="e1e">Add <code>IMAGE_STORAGE_PATH</code> to your <code>.env.example</code> (it's already there) and <code>.env</code> if missing</label></div>
+      <div class="verify-box"><strong>Verify:</strong> Run <code>npm run dev</code>, go to the admin images page, confirm uploads still work.</div>
+    </div>
+
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 2</span>
+        <span class="exercise-title">Fix cookie <code>secure</code> flag</span>
+      </div>
+      <p>In both <code>src/routes/api/login/+server.ts</code> and <code>src/routes/api/register/+server.ts</code>, replace the <code>process.env.NODE_ENV</code> check with SvelteKit's <code>$app/environment</code>.</p>
+      <div class="exercise-check"><input type="checkbox" id="e2a"><label for="e2a">Import <code>dev</code> from <code>$app/environment</code> in both files</label></div>
+      <div class="exercise-check"><input type="checkbox" id="e2b"><label for="e2b">Change <code>secure: process.env.NODE_ENV === 'production'</code> to <code>secure: !dev</code></label></div>
+      <div class="exercise-check"><input type="checkbox" id="e2c"><label for="e2c">Test login and registration still work in dev</label></div>
+      <div class="verify-box"><strong>Verify:</strong> Log out and log back in. If the cookie sets correctly (you stay logged in after page refresh), it works.</div>
+    </div>
+
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 3</span>
+        <span class="exercise-title">Add a public env var</span>
+      </div>
+      <p>Add a <code>PUBLIC_APP_NAME</code> variable and display it in your layout.</p>
+      <div class="exercise-check"><input type="checkbox" id="e3a"><label for="e3a">Add <code>PUBLIC_APP_NAME="Learn SvelteKit"</code> to your <code>.env</code> file</label></div>
+      <div class="exercise-check"><input type="checkbox" id="e3b"><label for="e3b">Add <code>PUBLIC_APP_NAME</code> to <code>.env.example</code> too</label></div>
+      <div class="exercise-check"><input type="checkbox" id="e3c"><label for="e3c">Import <code>PUBLIC_APP_NAME</code> from <code>$env/static/public</code> in <code>src/routes/+layout.svelte</code></label></div>
+      <div class="exercise-check"><input type="checkbox" id="e3d"><label for="e3d">Use it somewhere visible &mdash; the page title, a header, or the footer</label></div>
+      <div class="exercise-check"><input type="checkbox" id="e3e"><label for="e3e">Restart the dev server (static env vars require a restart when changed)</label></div>
+      <div class="verify-box"><strong>Verify:</strong> View source in the browser &mdash; the app name should appear in the HTML, confirming it's embedded in the bundle.</div>
+    </div>
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- Summary                                      -->
+  <!-- ============================================ -->
+  <h2>Summary</h2>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <h4>Key Concepts</h4>
+      <ul>
+        <li>4 modules: static/dynamic &times; private/public</li>
+        <li><code>PUBLIC_</code> prefix = opt-in to client exposure</li>
+        <li>Private imports blocked at build time in client code</li>
+        <li><code>$app/environment</code> for dev/building/version</li>
+        <li><code>.env</code> is dev-only; production uses real env vars</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h4>Rules of Thumb</h4>
+      <ul>
+        <li>Default to <code>$env/dynamic/private</code></li>
+        <li>Use <code>dev</code> from <code>$app/environment</code>, not <code>NODE_ENV</code></li>
+        <li>Declare all vars in <code>.env</code> for type generation</li>
+        <li>Keep <code>.env.example</code> in sync and committed</li>
+        <li>Never use <code>process.env</code> for app config</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout teacher">
+    <div class="callout-title">Ask your teacher</div>
+    If anything in this lesson is unclear, or you hit a problem during the exercises, ask your Claude Code agent. It has full context on this lesson and your project.
+  </div>
+
+</div>
+
+<script>
+  let answered = {};
+  let total = 5;
+
+  function checkAnswer(el, qId) {
+    if (answered[qId]) return;
+    answered[qId] = true;
+
+    const isCorrect = el.getAttribute('data-correct') === 'true';
+    const options = el.parentElement.querySelectorAll('.option');
+    options.forEach(o => {
+      o.classList.add('disabled');
+      if (o.getAttribute('data-correct') === 'true') o.classList.add('correct');
+    });
+    if (!isCorrect) el.classList.add('wrong');
+
+    const fbId = isCorrect ? qId + '-correct' : qId + '-wrong';
+    document.getElementById(fbId).classList.add('show');
+  }
+
+  function showScore() {
+    let correct = 0;
+    for (const qId of Object.keys(answered)) {
+      const q = document.getElementById(qId);
+      const chosen = q.querySelector('.option.correct:not(.disabled), .option.wrong');
+      if (chosen && chosen.classList.contains('correct') && !chosen.classList.contains('wrong')) correct++;
+      else {
+        const c = q.querySelector('.option.correct');
+        if (c && !q.querySelector('.option.wrong')) correct++;
+      }
+    }
+    correct = 0;
+    for (let i = 1; i <= total; i++) {
+      const qId = 'q' + i;
+      if (!answered[qId]) continue;
+      const q = document.getElementById(qId);
+      if (!q.querySelector('.option.wrong')) correct++;
+    }
+    const el = document.getElementById('quiz-score');
+    el.textContent = `You got ${correct} out of ${total} correct.` + (correct === total ? ' Perfect!' : ' Review the explanations above for any you missed.');
+    el.classList.add('show');
+  }
+</script>
+</body>
+</html>

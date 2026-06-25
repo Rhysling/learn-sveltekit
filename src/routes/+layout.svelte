@@ -1,12 +1,12 @@
 <script lang="ts">
 	import "$lib/styles/global.scss";
 	import { PUBLIC_APP_NAME } from "$env/static/public";
-	import type { RouteData } from "$lib/types/auth";
+	import type { LayoutProps } from "./$types";
 	import UserStatus from "$components/UserStatus.svelte";
 	import SiteMap from "$components/SiteMap.svelte";
 	import Toast from "$components/Toast.svelte";
 
-	let { data, children }: { data: RouteData; children: any } = $props();
+	let { data, children }: LayoutProps = $props();
 </script>
 
 <div class="container">

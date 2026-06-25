@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type {
-		AuthTokenPayload,
 		UserRemote,
 		LoginRequestBody,
 	} from "../../../../lib/types/auth";

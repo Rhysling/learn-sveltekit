@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 1: SvelteKit Form Actions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 6rem;
+    }
+
+    /* ── Header ── */
+    .lesson-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .lesson-tag {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .lesson-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+    }
+    .lesson-header p {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+    .lesson-meta {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    .lesson-meta span { display: flex; align-items: center; gap: 0.4rem; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      margin-top: 1.25rem;
+    }
+    .card h3:first-child { margin-top: 0; }
+    .card p { color: #374151; margin-bottom: 0.75rem; }
+    .card p:last-child { margin-bottom: 0; }
+    .card ul, .card ol { padding-left: 1.5rem; color: #374151; }
+    .card li { margin-bottom: 0.35rem; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-size: 0.925rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .callout-body { flex: 1; }
+    .callout-body strong { display: block; margin-bottom: 0.25rem; }
+    .callout.tip { background: var(--green-light); color: #065f46; }
+    .callout.warn { background: var(--yellow-light); color: #92400e; }
+    .callout.info { background: var(--accent-light); color: #3730a3; }
+    .callout.nuxt { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: var(--code-bg);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.7;
+    }
+    .code-block .filename {
+      font-size: 0.75rem;
+      color: #637777;
+      margin-bottom: 0.75rem;
+      display: block;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .code-block code { color: var(--code-text); white-space: pre; display: block; }
+    .kw { color: var(--code-keyword); }
+    .fn { color: var(--code-fn); }
+    .str { color: var(--code-string); }
+    .cmt { color: var(--code-comment); font-style: italic; }
+    .typ { color: var(--code-type); }
+    .op { color: var(--code-op); }
+    .num { color: #f78c6c; }
+    .dim { color: #637777; }
+
+    /* ── Comparison table ── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .compare-col { }
+    .compare-col h4 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+    }
+    .compare-col.old h4 { background: #fee2e2; color: #991b1b; }
+    .compare-col.new h4 { background: var(--green-light); color: #065f46; }
+
+    /* ── Quiz ── */
+    .quiz-section {
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .quiz-section h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .quiz-section .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    .question { margin-bottom: 1.75rem; }
+    .question:last-child { margin-bottom: 0; }
+    .question p {
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      font-size: 0.95rem;
+    }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 0.9rem;
+      background: var(--bg);
+      text-align: left;
+      width: 100%;
+      font-family: inherit;
+    }
+    .option:hover { border-color: var(--accent); background: var(--accent-light); }
+    .option.correct { border-color: var(--green); background: var(--green-light); color: #065f46; }
+    .option.wrong { border-color: var(--red); background: var(--red-light); color: #991b1b; }
+    .option .letter {
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+    .option.correct .letter { background: var(--green); color: white; }
+    .option.wrong .letter { background: var(--red); color: white; }
+    .feedback {
+      display: none;
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+    }
+    .feedback.show { display: block; }
+    .feedback.correct { background: var(--green-light); color: #065f46; }
+    .feedback.wrong { background: var(--red-light); color: #991b1b; }
+
+    /* ── Score ── */
+    .score-box {
+      display: none;
+      text-align: center;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+      border-radius: 10px;
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .score-box.show { display: block; }
+    .score-box .score-num {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+    .score-box .score-label { font-size: 0.9rem; }
+
+    /* ── Exercise ── */
+    .exercise {
+      background: #fffbeb;
+      border: 2px solid #fcd34d;
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .exercise h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: #92400e;
+    }
+    .exercise .subtitle {
+      color: #b45309;
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+    }
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 2rem;
+      height: 2rem;
+      background: #f59e0b;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+      flex-shrink: 0;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.25rem; font-size: 0.95rem; }
+    .step-body p { color: #374151; font-size: 0.875rem; margin: 0; }
+
+    /* ── Inline code ── */
+    code:not(.code-block code) {
+      background: #f3f4f6;
+      color: #be185d;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875em;
+    }
+
+    /* ── Footer ── */
+    .lesson-footer {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .lesson-footer strong { color: var(--text); }
+    .lesson-footer a { color: var(--accent); }
+
+    /* ── Progress ── */
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 1.5rem 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    @media (max-width: 580px) {
+      .compare { grid-template-columns: 1fr; }
+      .lesson-meta { flex-wrap: wrap; gap: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="lesson-header">
+    <span class="lesson-tag">Lesson 1 &nbsp;·&nbsp; SvelteKit Full-Stack</span>
+    <h1>Form Actions</h1>
+    <p>The idiomatic SvelteKit way to handle form submissions and server-side mutations — no extra API endpoints required.</p>
+    <div class="lesson-meta">
+      <span>⏱ ~25 min</span>
+      <span>🎯 Core concept</span>
+      <span>📋 Requires: routing + load functions (done)</span>
+    </div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" style="width: 0%" id="progress"></div></div>
+
+  <!-- Section 1: The Problem -->
+  <div class="card">
+    <h2>Why form actions exist</h2>
+    <p>In your current project, mutations (login, register) follow this pattern: a <code>&lt;form&gt;</code> or button calls a <code>fetch()</code> to a <code>+server.ts</code> endpoint, which handles the logic and returns JSON.</p>
+
+    <div class="compare">
+      <div class="compare-col old">
+        <h4>Your current approach</h4>
+        <div class="code-block" style="margin:0; font-size:0.78rem;">
+          <code><span class="cmt">// client-side JS required</span>
+<span class="kw">async function</span> <span class="fn">handleLogin</span>() {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'/api/login'</span>, {
+    method: <span class="str">'POST'</span>,
+    body: <span class="fn">JSON.stringify</span>(formData)
+  });
+  <span class="cmt">// handle response...</span>
+}</code>
+        </div>
+      </div>
+      <div class="compare-col new">
+        <h4>With form actions</h4>
+        <div class="code-block" style="margin:0; font-size:0.78rem;">
+          <code><span class="cmt">// No JS needed for basic case</span>
+<span class="cmt">// +page.server.ts handles it</span>
+&lt;<span class="fn">form</span> <span class="typ">method</span>=<span class="str">"POST"</span>&gt;
+  &lt;<span class="fn">input</span> <span class="typ">name</span>=<span class="str">"email"</span> /&gt;
+  &lt;<span class="fn">button</span>&gt;Submit&lt;/<span class="fn">button</span>&gt;
+&lt;/<span class="fn">form</span>&gt;</code>
+        </div>
+      </div>
+    </div>
+
+    <p>Form actions give you three things the fetch-API approach doesn't:</p>
+    <ul>
+      <li><strong>Progressive enhancement</strong> — works without JavaScript enabled (the browser just submits the form natively)</li>
+      <li><strong>Co-location</strong> — the server logic lives right next to the page that uses it, in the same <code>+page.server.ts</code></li>
+      <li><strong>Built-in data flow</strong> — validation errors and return values flow back to the component automatically via <code>form</code> prop</li>
+    </ul>
+
+    <div class="callout nuxt">
+      <span class="callout-icon">🔄</span>
+      <div class="callout-body">
+        <strong>Coming from Nuxt?</strong>
+        There's no direct Nuxt equivalent. The closest analogy is a server function + <code>useFetch</code>, but form actions handle the full request-response cycle including validation errors and redirects, all without explicit fetch calls in your component.
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Anatomy -->
+  <div class="card">
+    <h2>Anatomy of a form action</h2>
+    <p>A form action is an exported <code>actions</code> object in <code>+page.server.ts</code>. Each key in the object is a named action (or <code>default</code> for a single action).</p>
+
+    <h3>Server side: <code>+page.server.ts</code></h3>
+    <div class="code-block">
+      <span class="filename">src/routes/notes/+page.server.ts</span>
+      <code><span class="kw">import</span> { <span class="fn">fail</span>, <span class="fn">redirect</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+<span class="kw">import</span> prisma <span class="kw">from</span> <span class="str">'$lib/server/db'</span>;
+<span class="kw">import</span> <span class="kw">type</span> { <span class="typ">Actions</span> } <span class="kw">from</span> <span class="str">'./$types'</span>;
+
+<span class="kw">export const</span> <span class="fn">actions</span>: <span class="typ">Actions</span> = {
+  <span class="cmt">// The 'default' action handles a plain POST to this page</span>
+  <span class="kw">default</span>: <span class="kw">async</span> ({ <span class="fn">request</span>, cookies }) => {
+    <span class="kw">const</span> data = <span class="kw">await</span> request.<span class="fn">formData</span>();
+    <span class="kw">const</span> body = <span class="fn">String</span>(data.<span class="fn">get</span>(<span class="str">'body'</span>) ?? <span class="str">''</span>).<span class="fn">trim</span>();
+
+    <span class="cmt">// Validation: return errors without throwing</span>
+    <span class="kw">if</span> (!body) {
+      <span class="kw">return</span> <span class="fn">fail</span>(<span class="num">400</span>, { error: <span class="str">'Note body is required.'</span>, body });
+    }
+
+    <span class="kw">await</span> prisma.note.<span class="fn">create</span>({ data: { body } });
+
+    <span class="cmt">// Returning nothing re-runs the load function automatically</span>
+  }
+};</code>
+    </div>
+
+    <h3>Client side: <code>+page.svelte</code></h3>
+    <div class="code-block">
+      <span class="filename">src/routes/notes/+page.svelte</span>
+      <code><span class="kw">&lt;script</span> <span class="typ">lang</span>=<span class="str">"ts"</span><span class="kw">&gt;</span>
+  <span class="cmt">// 'form' is the data returned from the action (errors, etc.)</span>
+  <span class="kw">let</span> { data, form } = <span class="fn">$props</span>();
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="dim">&lt;!-- method="POST" is all that's needed to wire the form --&gt;</span>
+&lt;<span class="fn">form</span> <span class="typ">method</span>=<span class="str">"POST"</span>&gt;
+  {#<span class="kw">if</span> form?.error}
+    &lt;<span class="fn">p</span> <span class="typ">class</span>=<span class="str">"error"</span>&gt;{form.error}&lt;/<span class="fn">p</span>&gt;
+  {/<span class="kw">if</span>}
+
+  &lt;<span class="fn">textarea</span> <span class="typ">name</span>=<span class="str">"body"</span> <span class="typ">value</span>={form?.body ?? <span class="str">''</span>}&gt;&lt;/<span class="fn">textarea</span>&gt;
+  &lt;<span class="fn">button</span>&gt;Add note&lt;/<span class="fn">button</span>&gt;
+&lt;/<span class="fn">form</span>&gt;
+
+{#<span class="kw">each</span> data.notes <span class="kw">as</span> note}
+  &lt;<span class="fn">p</span>&gt;{note.body}&lt;/<span class="fn">p</span>&gt;
+{/<span class="kw">each</span>}</code>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">💡</span>
+      <div class="callout-body">
+        <strong>Key: <code>form</code> vs <code>data</code></strong>
+        <code>data</code> comes from the <code>load</code> function and holds your initial page data. <code>form</code> comes from the action and holds whatever the action returned — typically validation errors or success state. Both are passed as props by SvelteKit automatically.
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Multiple actions -->
+  <div class="card">
+    <h2>Named actions</h2>
+    <p>A single page can have multiple actions. Use the <code>?/actionName</code> query parameter syntax in the form's <code>action</code> attribute:</p>
+
+    <div class="code-block">
+      <span class="filename">src/routes/notes/+page.server.ts</span>
+      <code><span class="kw">export const</span> <span class="fn">actions</span>: <span class="typ">Actions</span> = {
+  <span class="fn">create</span>: <span class="kw">async</span> ({ request }) => {
+    <span class="cmt">// handles POST ?/create</span>
+  },
+
+  <span class="fn">delete</span>: <span class="kw">async</span> ({ request }) => {
+    <span class="kw">const</span> data = <span class="kw">await</span> request.<span class="fn">formData</span>();
+    <span class="kw">const</span> id = <span class="fn">String</span>(data.<span class="fn">get</span>(<span class="str">'id'</span>));
+    <span class="kw">await</span> prisma.note.<span class="fn">delete</span>({ where: { id } });
+  }
+};</code>
+    </div>
+
+    <div class="code-block">
+      <span class="filename">src/routes/notes/+page.svelte</span>
+      <code><span class="dim">&lt;!-- Targets the 'create' action --&gt;</span>
+&lt;<span class="fn">form</span> <span class="typ">method</span>=<span class="str">"POST"</span> <span class="typ">action</span>=<span class="str">"?/create"</span>&gt;
+  ...
+&lt;/<span class="fn">form</span>&gt;
+
+<span class="dim">&lt;!-- Targets the 'delete' action --&gt;</span>
+{#<span class="kw">each</span> data.notes <span class="kw">as</span> note}
+  &lt;<span class="fn">form</span> <span class="typ">method</span>=<span class="str">"POST"</span> <span class="typ">action</span>=<span class="str">"?/delete"</span>&gt;
+    &lt;<span class="fn">input</span> <span class="typ">type</span>=<span class="str">"hidden"</span> <span class="typ">name</span>=<span class="str">"id"</span> <span class="typ">value</span>={note.id} /&gt;
+    &lt;<span class="fn">button</span>&gt;Delete&lt;/<span class="fn">button</span>&gt;
+  &lt;/<span class="fn">form</span>&gt;
+{/<span class="kw">each</span>}</code>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div class="callout-body">
+        <strong>Automatic data refresh</strong>
+        When an action succeeds (returns nothing or a plain object), SvelteKit automatically re-runs the page's <code>load</code> function — so your list of notes updates without any manual state management. This is the biggest quality-of-life win.
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: use:enhance -->
+  <div class="card">
+    <h2>Progressive enhancement with <code>use:enhance</code></h2>
+    <p>Form actions work <em>without</em> JavaScript. But with JavaScript, you can opt in to a smoother experience using the <code>enhance</code> action from <code>$app/forms</code>:</p>
+
+    <div class="code-block">
+      <span class="filename">src/routes/notes/+page.svelte</span>
+      <code><span class="kw">&lt;script</span> <span class="typ">lang</span>=<span class="str">"ts"</span><span class="kw">&gt;</span>
+  <span class="kw">import</span> { <span class="fn">enhance</span> } <span class="kw">from</span> <span class="str">'$app/forms'</span>;
+  <span class="kw">let</span> { data, form } = <span class="fn">$props</span>();
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="dim">&lt;!-- use:enhance intercepts the submit and sends it via fetch --&gt;</span>
+<span class="dim">&lt;!-- No page reload. Errors and data still flow the same way. --&gt;</span>
+&lt;<span class="fn">form</span> <span class="typ">method</span>=<span class="str">"POST"</span> <span class="typ">use:enhance</span>&gt;
+  ...
+&lt;/<span class="fn">form</span>&gt;</code>
+    </div>
+
+    <p>With <code>use:enhance</code> you also get a callback to handle loading state:</p>
+
+    <div class="code-block">
+      <code><span class="kw">let</span> submitting = <span class="fn">$state</span>(<span class="kw">false</span>);
+
+&lt;<span class="fn">form</span>
+  <span class="typ">method</span>=<span class="str">"POST"</span>
+  <span class="typ">use:enhance</span>={() => {
+    submitting = <span class="kw">true</span>;
+    <span class="kw">return</span> <span class="kw">async</span> ({ <span class="fn">update</span> }) => {
+      <span class="kw">await</span> <span class="fn">update</span>();     <span class="cmt">// re-run load + apply form result</span>
+      submitting = <span class="kw">false</span>;
+    };
+  }}
+&gt;
+  &lt;<span class="fn">button</span> <span class="typ">disabled</span>={submitting}&gt;
+    {submitting ? <span class="str">'Saving…'</span> : <span class="str">'Save'</span>}
+  &lt;/<span class="fn">button</span>&gt;
+&lt;/<span class="fn">form</span>&gt;</code>
+    </div>
+
+    <div class="callout warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body">
+        <strong>Don't forget <code>await update()</code></strong>
+        If you provide a callback to <code>use:enhance</code>, you <em>must</em> call <code>update()</code> yourself — SvelteKit won't do it automatically anymore. Without it, the <code>load</code> function won't re-run and your UI won't refresh.
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: fail vs throw -->
+  <div class="card">
+    <h2>Returning errors: <code>fail()</code> vs throwing</h2>
+    <p>There are two ways to signal a problem from an action:</p>
+
+    <div class="compare">
+      <div class="compare-col old">
+        <h4>Throw — for unexpected errors</h4>
+        <div class="code-block" style="margin:0; font-size:0.78rem;">
+          <code><span class="kw">import</span> { <span class="fn">error</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+
+<span class="cmt">// Shows the error page</span>
+<span class="kw">throw</span> <span class="fn">error</span>(<span class="num">500</span>, <span class="str">'DB is down'</span>);</code>
+        </div>
+      </div>
+      <div class="compare-col new">
+        <h4>fail() — for validation errors</h4>
+        <div class="code-block" style="margin:0; font-size:0.78rem;">
+          <code><span class="kw">import</span> { <span class="fn">fail</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+
+<span class="cmt">// Returns data to the 'form' prop</span>
+<span class="kw">return</span> <span class="fn">fail</span>(<span class="num">422</span>, {
+  error: <span class="str">'Email already taken'</span>
+});</code>
+        </div>
+      </div>
+    </div>
+
+    <p>Use <code>fail()</code> for user-facing validation errors. The component receives the data in its <code>form</code> prop and can display it inline. Use <code>throw error()</code> only for genuine server errors that should show an error page.</p>
+  </div>
+
+  <!-- Quiz -->
+  <div class="quiz-section">
+    <h2>Knowledge check</h2>
+    <p class="subtitle">Test yourself — click an answer to see if you're right.</p>
+
+    <div class="question" id="q1">
+      <p>1. Where do you define a form action in SvelteKit?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this, 'q1', false)">
+          <span class="letter">A</span>
+          In a <code>+server.ts</code> file as a POST handler
+        </button>
+        <button class="option" onclick="answer(this, 'q1', true)">
+          <span class="letter">B</span>
+          In <code>+page.server.ts</code> as an exported <code>actions</code> object
+        </button>
+        <button class="option" onclick="answer(this, 'q1', false)">
+          <span class="letter">C</span>
+          In <code>+page.svelte</code> as a Svelte store
+        </button>
+        <button class="option" onclick="answer(this, 'q1', false)">
+          <span class="letter">D</span>
+          In <code>+layout.server.ts</code>
+        </button>
+      </div>
+      <div class="feedback correct" id="q1-correct">
+        Correct! Actions live in <code>+page.server.ts</code> alongside the <code>load</code> function. This co-location is one of the key benefits — the mutation logic is right next to the page that uses it.
+      </div>
+      <div class="feedback wrong" id="q1-wrong">
+        Not quite. <code>+server.ts</code> is for API endpoints (like your existing <code>/api/login</code> route). Actions go in <code>+page.server.ts</code> as an exported <code>actions</code> object.
+      </div>
+    </div>
+
+    <div class="question" id="q2">
+      <p>2. After a form action completes successfully (returns nothing), what happens automatically?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this, 'q2', false)">
+          <span class="letter">A</span>
+          The page redirects to the home route
+        </button>
+        <button class="option" onclick="answer(this, 'q2', false)">
+          <span class="letter">B</span>
+          Nothing — you must manually call a store update
+        </button>
+        <button class="option" onclick="answer(this, 'q2', true)">
+          <span class="letter">C</span>
+          The <code>load</code> function re-runs and the component re-renders with fresh data
+        </button>
+        <button class="option" onclick="answer(this, 'q2', false)">
+          <span class="letter">D</span>
+          The browser performs a full page reload
+        </button>
+      </div>
+      <div class="feedback correct" id="q2-correct">
+        Correct! SvelteKit automatically re-runs the <code>load</code> function after a successful action (when using <code>use:enhance</code>). Your list of notes, users, or whatever updates without any manual state management.
+      </div>
+      <div class="feedback wrong" id="q2-wrong">
+        Not quite. Without JS it does a full reload (which also re-runs load). With <code>use:enhance</code>, SvelteKit re-runs just the <code>load</code> function via fetch, then re-renders. No redirect, no manual stores needed.
+      </div>
+    </div>
+
+    <div class="question" id="q3">
+      <p>3. You have a form with an invalid email address. You want to show an error <em>on the same page</em>, keeping what the user typed. Which do you use?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this, 'q3', false)">
+          <span class="letter">A</span>
+          <code>throw error(400, 'Invalid email')</code>
+        </button>
+        <button class="option" onclick="answer(this, 'q3', true)">
+          <span class="letter">B</span>
+          <code>return fail(400, { error: 'Invalid email', email: submittedEmail })</code>
+        </button>
+        <button class="option" onclick="answer(this, 'q3', false)">
+          <span class="letter">C</span>
+          <code>throw redirect(303, '/error')</code>
+        </button>
+        <button class="option" onclick="answer(this, 'q3', false)">
+          <span class="letter">D</span>
+          Return a JSON response
+        </button>
+      </div>
+      <div class="feedback correct" id="q3-correct">
+        Correct! <code>fail()</code> returns data back to the <code>form</code> prop in your component. You can include the submitted values so the form repopulates (great UX). The page stays — no navigation occurs.
+      </div>
+      <div class="feedback wrong" id="q3-wrong">
+        Almost. <code>throw error()</code> navigates to an error page — that's for unexpected server failures. For user-facing validation, use <code>return fail()</code>. It sends data back to the component's <code>form</code> prop while staying on the same page.
+      </div>
+    </div>
+
+    <div class="question" id="q4">
+      <p>4. You add <code>use:enhance</code> to a form and provide a callback. The callback runs but the data on the page doesn't update. What's missing?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this, 'q4', false)">
+          <span class="letter">A</span>
+          The action must explicitly call <code>invalidate()</code>
+        </button>
+        <button class="option" onclick="answer(this, 'q4', false)">
+          <span class="letter">B</span>
+          <code>use:enhance</code> requires a Svelte store
+        </button>
+        <button class="option" onclick="answer(this, 'q4', true)">
+          <span class="letter">C</span>
+          You forgot to call <code>await update()</code> inside the callback
+        </button>
+        <button class="option" onclick="answer(this, 'q4', false)">
+          <span class="letter">D</span>
+          The <code>load</code> function must be exported from <code>+layout.server.ts</code>
+        </button>
+      </div>
+      <div class="feedback correct" id="q4-correct">
+        Exactly right. When you supply a custom callback to <code>use:enhance</code>, SvelteKit hands control to you — you must call <code>await update()</code> to trigger the load function re-run and apply the form result. It won't do it automatically if you provide a callback.
+      </div>
+      <div class="feedback wrong" id="q4-wrong">
+        The gotcha here is: when you provide a callback to <code>use:enhance</code>, SvelteKit no longer automatically runs the load function after the action. You take over responsibility. You must call <code>await update()</code> inside your callback to trigger the refresh.
+      </div>
+    </div>
+
+    <div class="score-box" id="score-box">
+      <div class="score-num" id="score-num"></div>
+      <div class="score-label">Nice work — check the exercise below to practice in code.</div>
+    </div>
+  </div>
+
+  <!-- Exercise -->
+  <div class="exercise">
+    <h2>Hands-on exercise</h2>
+    <p class="subtitle">Build a simple note-taking page using what you just learned. ~15 minutes.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Add a <code>Note</code> model to Prisma</strong>
+        <p>In <code>prisma/schema.prisma</code>, add a <code>Note</code> model with fields: <code>id</code> (cuid), <code>body</code> (String), <code>createdAt</code> (DateTime). Then run <code>npx prisma migrate dev --name add-note</code>.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Create <code>src/routes/notes/+page.server.ts</code></strong>
+        <p>Export a <code>load</code> function that fetches all notes from Prisma. Export an <code>actions</code> object with a <code>default</code> action that reads <code>body</code> from <code>formData</code>, validates it's not empty using <code>fail()</code>, and creates a new note.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Create <code>src/routes/notes/+page.svelte</code></strong>
+        <p>Destructure <code>data</code> and <code>form</code> from <code>$props()</code>. Add a <code>&lt;form method="POST"&gt;</code> with a textarea named <code>body</code> and a submit button. Display <code>form?.error</code> if it exists. List <code>data.notes</code> below the form.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Add <code>use:enhance</code></strong>
+        <p>Import <code>enhance</code> from <code>$app/forms</code> and add <code>use:enhance</code> to the form. Optionally add a <code>submitting</code> state variable to disable the button while saving.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>Test it</strong>
+        <p>Navigate to <code>http://localhost:5173/notes</code>. Submit an empty form — you should see your validation error. Submit a real note — it should appear in the list without a page reload.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reference -->
+  <div class="card">
+    <h2>What to read next</h2>
+    <ul>
+      <li><a href="https://kit.svelte.dev/docs/form-actions" target="_blank">Official: SvelteKit Form Actions</a> — the complete reference, including file uploads, custom callbacks, and more.</li>
+      <li><a href="https://kit.svelte.dev/docs/progressive-enhancement" target="_blank">Official: Progressive Enhancement</a> — deeper look at <code>use:enhance</code> and custom callbacks.</li>
+      <li>Next lesson: <strong>hooks.server.ts</strong> — how to protect routes at the middleware level instead of checking auth in every load function.</li>
+    </ul>
+  </div>
+
+  <!-- Footer -->
+  <div class="lesson-footer">
+    <strong>Questions?</strong> Ask your Claude Code session directly — describe what you're stuck on or paste the code that isn't working. It can explain, debug, and adjust the exercise to match where you are.
+    <br><br>
+    <strong>References:</strong>
+    <a href="https://kit.svelte.dev/docs/form-actions" target="_blank">kit.svelte.dev/docs/form-actions</a> &nbsp;·&nbsp;
+    <a href="https://svelte.dev/docs" target="_blank">svelte.dev/docs</a>
+  </div>
+
+</div>
+
+<script>
+  const answers = {};
+  const total = 4;
+
+  function answer(btn, qId, isCorrect) {
+    if (answers[qId] !== undefined) return;
+    answers[qId] = isCorrect;
+
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.setAttribute('disabled', 'true'));
+
+    btn.classList.add(isCorrect ? 'correct' : 'wrong');
+    document.getElementById(qId + (isCorrect ? '-correct' : '-wrong')).classList.add('show');
+
+    // Update progress bar
+    const answered = Object.keys(answers).length;
+    document.getElementById('progress').style.width = (answered / total * 100) + '%';
+
+    // Show score when all answered
+    if (answered === total) {
+      const score = Object.values(answers).filter(Boolean).length;
+      const box = document.getElementById('score-box');
+      const num = document.getElementById('score-num');
+      num.textContent = score + '/' + total;
+      box.classList.add('show');
+    }
+  }
+</script>
+</body>
+</html>

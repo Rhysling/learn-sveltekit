@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 7: Deploying a SvelteKit App to Production</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --orange: #ea580c;
+      --orange-light: #fff7ed;
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+      --code-prop: #f8c555;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+
+    .lesson-header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-tag {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+    .lesson-subtitle { color: var(--muted); font-size: 1.05rem; }
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      color: var(--text);
+    }
+
+    p { margin-bottom: 1rem; }
+
+    a { color: var(--accent); text-decoration: underline; }
+    a:hover { opacity: 0.8; }
+
+    .callout {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      border-left: 4px solid;
+    }
+    .callout.info   { background: var(--accent-light); border-color: var(--accent); }
+    .callout.warn   { background: var(--yellow-light); border-color: var(--yellow); }
+    .callout.good   { background: var(--green-light);  border-color: var(--green); }
+    .callout.danger { background: var(--red-light);    border-color: var(--red); }
+    .callout-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+      opacity: 0.7;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin: 1rem 0 1.5rem;
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875em;
+      background: #e8eaf6;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      color: #3730a3;
+    }
+    pre code { background: none; padding: 0; color: inherit; font-size: inherit; border-radius: 0; }
+
+    .kw   { color: var(--code-keyword); }
+    .str  { color: var(--code-string); }
+    .fn   { color: var(--code-fn); }
+    .cmt  { color: var(--code-comment); font-style: italic; }
+    .tp   { color: var(--code-type); }
+    .op   { color: var(--code-op); }
+    .prop { color: var(--code-prop); }
+    .num  { color: #f78c6c; }
+    .toml-key   { color: #89ddff; }
+    .toml-val   { color: #c3e88d; }
+    .toml-sect  { color: #ffcb6b; font-weight: bold; }
+    .toml-cmt   { color: #637777; font-style: italic; }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .comparison > div {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .comparison .col-header {
+      padding: 0.6rem 1rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .comparison .col-header.blue   { background: var(--accent-light); color: var(--accent); }
+    .comparison .col-header.green  { background: var(--green-light);  color: var(--green); }
+    .comparison .col-header.orange { background: var(--orange-light); color: var(--orange); }
+    .comparison .col-body { padding: 0.75rem 1rem; font-size: 0.9rem; line-height: 1.6; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+    th {
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.6rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    .checklist { list-style: none; margin: 1rem 0; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist input[type="checkbox"] {
+      width: 1.1rem;
+      height: 1.1rem;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+      cursor: pointer;
+    }
+    .checklist label { cursor: pointer; line-height: 1.5; }
+
+    .quiz-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+    }
+    .quiz-section h2 { margin-top: 0; }
+    .question {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .question:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    .question-text { font-weight: 600; margin-bottom: 0.75rem; }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      margin: 0.3rem 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-size: 0.9rem;
+    }
+    .option:hover { background: var(--accent-light); }
+    .option.correct { background: var(--green-light); border-color: var(--green); }
+    .option.wrong   { background: var(--red-light);   border-color: var(--red); }
+    .option input[type="radio"] { margin-top: 0.2rem; accent-color: var(--accent); }
+    .feedback {
+      display: none;
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    .feedback.correct { background: var(--green-light); color: #064e3b; display: block; }
+    .feedback.wrong   { background: var(--red-light);   color: #7f1d1d; display: block; }
+
+    .step-list {
+      list-style: none;
+      margin: 1rem 0;
+    }
+    .step-list li {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-content { flex: 1; padding-top: 0.2rem; }
+    .step-content p { margin-bottom: 0.5rem; }
+
+    .adapter-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .adapter-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 0.875rem;
+    }
+    .adapter-card .name {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.4rem;
+    }
+    .adapter-card .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .tag-node   { background: #dcfce7; color: #166534; }
+    .tag-edge   { background: #f0fdf4; color: #14532d; }
+    .tag-static { background: #fef3c7; color: #78350f; }
+
+    .nuxt-callout {
+      background: linear-gradient(to right, #f0f9ff, #e0f2fe);
+      border-left: 4px solid #0ea5e9;
+      border-radius: 0 10px 10px 0;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      font-size: 0.95rem;
+    }
+    .nuxt-callout .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #0369a1;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+    }
+
+    .terminal {
+      background: #0f172a;
+      color: #94a3b8;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.9;
+      margin: 1rem 0 1.5rem;
+    }
+    .terminal .prompt { color: #4ade80; user-select: none; }
+    .terminal .cmd    { color: #e2e8f0; }
+    .terminal .out    { color: #94a3b8; }
+    .terminal .note   { color: #64748b; font-style: italic; }
+
+    .ask-teacher {
+      background: var(--surface);
+      border: 2px dashed var(--accent);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin: 2rem 0;
+      text-align: center;
+    }
+    .ask-teacher p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+    .ask-teacher strong { color: var(--accent); }
+
+    .file-label {
+      display: inline-block;
+      background: #1e1e3f;
+      color: #f8c555;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.75rem;
+      border-radius: 6px 6px 0 0;
+      margin-bottom: -2px;
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="lesson-header">
+    <div class="lesson-tag">Lesson 7 &mdash; SvelteKit</div>
+    <h1>Deploying a SvelteKit App to Production</h1>
+    <p class="lesson-subtitle">Adapters, environment variables, and shipping to Fly.io.</p>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-label">What you'll learn</div>
+    <ul style="margin: 0; padding-left: 1.25rem; line-height: 2.1;">
+      <li>What SvelteKit adapters are and which one fits your app</li>
+      <li><code>$env/static/private</code> vs <code>$env/dynamic/private</code> — the env gotcha that bites every first deploy</li>
+      <li>What <code>npm run build</code> actually produces</li>
+      <li>How to deploy to <a href="https://fly.io" target="_blank">Fly.io</a> with a persistent SQLite volume</li>
+      <li>Running Prisma migrations in production</li>
+    </ul>
+  </div>
+
+
+  <!-- ───────────────────────────── 1. ADAPTERS ──────────────────────────── -->
+  <h2>1. The Adapter Model</h2>
+
+  <p>
+    SvelteKit is <em>platform-agnostic</em>. An <strong>adapter</strong> is a plugin that
+    packages your built app for a specific deployment runtime.
+    <a href="https://kit.svelte.dev/docs/adapters" target="_blank">Official adapter docs →</a>
+  </p>
+
+  <div class="nuxt-callout">
+    <div class="label">Nuxt analogy</div>
+    Same idea as Nuxt's Nitro presets (<code>preset: 'node-server'</code>, <code>preset: 'vercel'</code>).
+    SvelteKit just makes it an explicit import in <code>svelte.config.ts</code>.
+  </div>
+
+  <div class="adapter-grid">
+    <div class="adapter-card">
+      <div class="name">adapter-node</div>
+      <span class="tag tag-node">Node.js server</span>
+      <p>Produces a self-contained Node.js HTTP server. Run with <code>node build</code>. Works on any VPS, container, or PaaS that runs Node — including <strong>Fly.io</strong>.</p>
+      <p style="margin-top:0.5rem;"><strong>Your project uses this.</strong></p>
+    </div>
+    <div class="adapter-card">
+      <div class="name">adapter-vercel</div>
+      <span class="tag tag-edge">Serverless</span>
+      <p>Deploys to Vercel edge/serverless functions. No persistent filesystem — <em>SQLite does not work here</em>.</p>
+    </div>
+    <div class="adapter-card">
+      <div class="name">adapter-static</div>
+      <span class="tag tag-static">Static only</span>
+      <p>Pre-renders every page at build time. No server, no form actions, no server-side secrets. Not suitable for your app.</p>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-label">SQLite + serverless = no</div>
+    Vercel, Netlify, and Cloudflare Workers are stateless — each request may hit a different container with a fresh filesystem.
+    A SQLite file lives on disk. It won't be shared, and data written in one request is gone for the next.
+    <code>adapter-node</code> on a long-running container (Fly machine) is the correct match for this app.
+  </div>
+
+
+  <!-- ───────────────────────────── 2. BUILD ─────────────────────────────── -->
+  <h2>2. What <code>npm run build</code> Produces</h2>
+
+  <div class="terminal">
+    <div><span class="prompt">$ </span><span class="cmd">npm run build</span></div>
+    <div class="out">✓ 47 modules transformed.</div>
+    <div class="out">build/server/index.js    ← your compiled server handler</div>
+    <div class="out">build/client/            ← browser assets (JS, CSS)</div>
+    <div class="out">build/prerendered/       ← any static pre-rendered pages</div>
+  </div>
+
+  <p>
+    The <code>build/</code> folder is a <strong>self-contained Node.js app</strong>.
+    Start it with:
+  </p>
+
+  <div class="terminal">
+    <div><span class="prompt">$ </span><span class="cmd">node build</span></div>
+    <div class="out">Listening on 0.0.0.0:3000</div>
+  </div>
+
+  <p>
+    No Vite, no dev server, no hot reload. Plain Node. Your <code>package.json</code>
+    already has <code>"start": "node build"</code> for exactly this.
+    <strong>Always test this locally before deploying.</strong>
+  </p>
+
+
+  <!-- ───────────────────────────── 3. ENV VARS ──────────────────────────── -->
+  <h2>3. Environment Variables: The Critical Distinction</h2>
+
+  <p>
+    SvelteKit has four env modules. Picking the wrong one is the most common
+    first-deploy mistake.
+    <a href="https://kit.svelte.dev/docs/modules#$env-static-private" target="_blank">Docs →</a>
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Module</th>
+        <th>Resolved at</th>
+        <th>Available in</th>
+        <th>Use for</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>$env/static/private</code></td>
+        <td><strong>Build time</strong> (or startup with adapter-node)</td>
+        <td>Server only</td>
+        <td>Secrets: JWT, DB URL</td>
+      </tr>
+      <tr>
+        <td><code>$env/dynamic/private</code></td>
+        <td><strong>Request time</strong></td>
+        <td>Server only</td>
+        <td>Secrets that vary per request / runtime</td>
+      </tr>
+      <tr>
+        <td><code>$env/static/public</code></td>
+        <td>Build time</td>
+        <td>Server + Client</td>
+        <td>Public config (<code>PUBLIC_API_URL</code>)</td>
+      </tr>
+      <tr>
+        <td><code>$env/dynamic/public</code></td>
+        <td>Request time</td>
+        <td>Server + Client</td>
+        <td>Public config resolved at runtime</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>The "static" naming trap</h3>
+
+  <p>
+    <code>$env/static/private</code> sounds like values are frozen at compile time — they aren't,
+    <em>with <code>adapter-node</code></em>. The word "static" means <strong>statically analyzable by Vite</strong>
+    (so it can tree-shake and warn on missing vars), not that the value is baked in as a literal.
+  </p>
+  <p>
+    With <code>adapter-node</code>, <code>$env/static/private</code> reads from <code>process.env</code>
+    when the Node server starts — exactly the same moment as secrets injected by Fly.io.
+    Setting <code>fly secrets set JWT_SECRET=…</code> works correctly.
+    <a href="https://github.com/sveltejs/kit/tree/main/packages/adapter-node" target="_blank">adapter-node source →</a>
+  </p>
+
+  <div class="callout good">
+    <div class="callout-label">Your project is already correct</div>
+    <code>src/lib/server/auth.ts</code> and <code>src/lib/server/db.ts</code> import from
+    <code>$env/static/private</code>. The <code>process.env.NODE_ENV</code> usage in cookie
+    setup is also fine — <code>NODE_ENV</code> is a universal Node.js convention, not a SvelteKit secret.
+    No env changes needed before deploying.
+  </div>
+
+
+  <!-- ───────────────────────────── 4. FLY.IO ────────────────────────────── -->
+  <h2>4. Deploying to Fly.io</h2>
+
+  <p>
+    <a href="https://fly.io" target="_blank">Fly.io</a> runs your app inside a lightweight VM
+    (a "machine") anywhere in the world. It's a great fit for this project:
+    long-running Node server, persistent filesystem volume for SQLite and uploads,
+    no cold-start lag. The free tier includes 3 shared-CPU machines and 3 GB of volume storage.
+    <a href="https://fly.io/docs/reference/pricing/" target="_blank">Pricing →</a>
+  </p>
+
+  <h3>Install the Fly CLI (<code>flyctl</code>)</h3>
+
+  <div class="terminal">
+    <div class="note"># Windows (PowerShell)</div>
+    <div><span class="prompt">$ </span><span class="cmd">iwr https://fly.io/install.ps1 -useb | iex</span></div>
+    <div class="out" style="margin-top:0.5rem;"></div>
+    <div class="note"># macOS / Linux</div>
+    <div><span class="prompt">$ </span><span class="cmd">curl -L https://fly.io/install.sh | sh</span></div>
+  </div>
+
+  <div class="terminal">
+    <div><span class="prompt">$ </span><span class="cmd">fly auth login</span></div>
+    <div class="out">Opening browser to authenticate…</div>
+  </div>
+
+  <h3>Step-by-step deploy</h3>
+
+  <ol class="step-list">
+    <li>
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <p><strong>Test your build locally.</strong></p>
+        <div class="terminal" style="margin:0.5rem 0;">
+          <div><span class="prompt">$ </span><span class="cmd">npm run build</span></div>
+          <div><span class="prompt">$ </span><span class="cmd">node build</span></div>
+          <div class="out">Listening on 0.0.0.0:3000</div>
+        </div>
+        <p>Visit <code>http://localhost:3000</code> and test auth, notes, the image gallery. Fix any build errors before touching Fly.</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <p><strong>Make sure <code>.env</code> and <code>uploads/</code> are in <code>.gitignore</code>.</strong><br>
+        Secrets must never be committed. Uploaded files don't belong in git either.</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <p><strong>Initialize your Fly app.</strong> Run this from your project root:</p>
+        <div class="terminal" style="margin:0.5rem 0;">
+          <div><span class="prompt">$ </span><span class="cmd">fly launch</span></div>
+          <div class="out">Detected a NodeJS app</div>
+          <div class="out">? Choose an app name: my-sveltekit-app</div>
+          <div class="out">? Choose a region: sea (Seattle) — pick one close to your users</div>
+          <div class="out">? Would you like to set up a Postgresql database? No</div>
+          <div class="out">? Would you like to deploy now? No  ← say No, we need to configure first</div>
+        </div>
+        <p>This creates <code>fly.toml</code> and a <code>Dockerfile</code> in your project.</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <p><strong>Edit the generated <code>Dockerfile</code>.</strong><br>
+        <code>fly launch</code> generates a decent Dockerfile for Node apps, but confirm it builds
+        and starts correctly. It should look roughly like:</p>
+        <div class="file-label">Dockerfile</div>
+        <pre><code><span class="kw">FROM</span> <span class="str">node:20-slim</span>
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> package*.json ./
+<span class="kw">RUN</span> npm ci
+<span class="kw">COPY</span> . .
+<span class="kw">RUN</span> npm run build
+<span class="kw">RUN</span> npm prune --omit=dev
+<span class="kw">EXPOSE</span> <span class="num">8080</span>
+<span class="kw">ENV</span> <span class="prop">PORT</span>=<span class="num">8080</span>
+<span class="kw">CMD</span> [<span class="str">"node"</span>, <span class="str">"build"</span>]</code></pre>
+        <p>
+          If the generated file differs significantly, the key requirements are:
+          <code>npm run build</code> during the image build, then <code>node build</code> as the start command.
+          Prisma also needs its generated client — <code>npm ci</code> (which runs <code>prisma generate</code> via postinstall if configured) should handle it.
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <p><strong>Configure <code>fly.toml</code>.</strong><br>
+        Open the generated <code>fly.toml</code> and make sure it includes a <code>[[mounts]]</code> section
+        for the persistent volume:</p>
+        <div class="file-label">fly.toml</div>
+        <pre><code><span class="toml-sect">[build]</span>
+  <span class="toml-cmt"># Fly uses your Dockerfile automatically</span>
+
+<span class="toml-sect">[env]</span>
+  <span class="toml-key">PORT</span> = <span class="toml-val">"8080"</span>
+  <span class="toml-cmt"># Non-secret env vars go here</span>
+  <span class="toml-cmt"># Secrets (JWT_SECRET, DATABASE_URL) go in fly secrets — NOT here</span>
+
+<span class="toml-sect">[[mounts]]</span>
+  <span class="toml-key">source</span>      = <span class="toml-val">"data"</span>          <span class="toml-cmt"># name of the Fly volume</span>
+  <span class="toml-key">destination</span> = <span class="toml-val">"/app/data"</span>    <span class="toml-cmt"># path inside the container</span>
+
+<span class="toml-sect">[[services]]</span>
+  <span class="toml-key">internal_port</span> = <span class="num">8080</span>
+  <span class="toml-key">protocol</span>      = <span class="toml-val">"tcp"</span>
+
+  <span class="toml-sect">[[services.ports]]</span>
+    <span class="toml-key">handlers</span> = [<span class="toml-val">"http"</span>]
+    <span class="toml-key">port</span>     = <span class="num">80</span>
+
+  <span class="toml-sect">[[services.ports]]</span>
+    <span class="toml-key">handlers</span> = [<span class="toml-val">"tls"</span>, <span class="toml-val">"http"</span>]
+    <span class="toml-key">port</span>     = <span class="num">443</span></code></pre>
+      </div>
+    </li>
+
+    <li>
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <p><strong>Create the persistent volume.</strong></p>
+        <div class="terminal" style="margin:0.5rem 0;">
+          <div><span class="prompt">$ </span><span class="cmd">fly volumes create data --region sea --size 1</span></div>
+          <div class="out">        ID: vol_xxxxxxxxxx</div>
+          <div class="out">      Name: data</div>
+          <div class="out">    Region: sea</div>
+          <div class="out">Size (GB): 1</div>
+        </div>
+        <p>Match <code>--region</code> to whatever region you chose during <code>fly launch</code>.
+        This 1 GB volume will hold your SQLite file and uploaded images.</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="step-num">7</div>
+      <div class="step-content">
+        <p><strong>Set secrets.</strong><br>
+        Secrets are encrypted at rest by Fly and injected as environment variables at runtime.
+        They are <em>never</em> stored in <code>fly.toml</code> or your Dockerfile.</p>
+        <div class="terminal" style="margin:0.5rem 0;">
+          <div><span class="prompt">$ </span><span class="cmd">fly secrets set \</span></div>
+          <div><span class="cmd">  JWT_SECRET="your-strong-secret-here" \</span></div>
+          <div><span class="cmd">  DATABASE_URL="file:/app/data/db.sqlite" \</span></div>
+          <div><span class="cmd">  IMAGE_STORAGE_PATH="/app/data/uploads"</span></div>
+        </div>
+        <p>
+          Note the paths: <code>/app/data/</code> is the volume mount point from <code>fly.toml</code>.
+          Everything inside it survives redeploys.
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <div class="step-num">8</div>
+      <div class="step-content">
+        <p><strong>Deploy.</strong></p>
+        <div class="terminal" style="margin:0.5rem 0;">
+          <div><span class="prompt">$ </span><span class="cmd">fly deploy</span></div>
+          <div class="out">==> Building image with Docker</div>
+          <div class="out">--> Building image done</div>
+          <div class="out">==> Pushing image to fly</div>
+          <div class="out">==> Creating release</div>
+          <div class="out">--> release v1 created</div>
+          <div class="out">Visit your app at https://my-sveltekit-app.fly.dev</div>
+        </div>
+        <p>Fly builds the Docker image, pushes it, and starts a machine. Watch the logs live with <code>fly logs</code>.</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="step-num">9</div>
+      <div class="step-content">
+        <p><strong>Run Prisma migrations.</strong><br>
+        On first deploy — and after every schema change — apply migrations to the production database:</p>
+        <div class="terminal" style="margin:0.5rem 0;">
+          <div><span class="prompt">$ </span><span class="cmd">fly ssh console -C "cd /app && npx prisma migrate deploy"</span></div>
+          <div class="out">Connecting to top1.nearest.of.my-sveltekit-app.internal... complete</div>
+          <div class="out">Applying migration `20240101_init`</div>
+          <div class="out">Done</div>
+        </div>
+        <p>
+          <code>migrate deploy</code> (not <code>migrate dev</code>) is the production command:
+          non-interactive, applies only pending migrations, safe for CI/CD.
+        </p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="callout good">
+    <div class="callout-label">After a successful deploy</div>
+    Future deploys are just <code>fly deploy</code> — one command.
+    Fly rebuilds the Docker image, replaces the machine, and keeps the volume mounted.
+    Your SQLite data and uploaded images are untouched.
+  </div>
+
+
+  <!-- ───────────────────────────── 5. SQLITE ────────────────────────────── -->
+  <h2>5. The SQLite Persistence Picture</h2>
+
+  <div class="comparison">
+    <div>
+      <div class="col-header orange">Without a volume (bad)</div>
+      <div class="col-body">
+        SQLite file lives in the container filesystem.
+        Every <code>fly deploy</code> replaces the container.
+        Your entire database is wiped with each deploy.
+      </div>
+    </div>
+    <div>
+      <div class="col-header green">With a volume at /app/data (correct)</div>
+      <div class="col-body">
+        The volume is a separate disk attached to the machine.
+        Deploying replaces the container but keeps the volume.
+        Your data survives across all redeploys.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-label">SQLite on Fly — one machine only</div>
+    Fly volumes are attached to a single machine in a single region.
+    If you later scale to multiple machines, SQLite won't work (two machines can't safely write to the same file).
+    That's a future problem — for now, one machine is correct, cost-effective, and perfectly capable.
+    If you ever need multi-machine scale, <a href="https://turso.tech" target="_blank">Turso</a>
+    is a hosted SQLite-compatible service with a Prisma driver.
+  </div>
+
+
+  <!-- ───────────────────────────── CHECKLIST ────────────────────────────── -->
+  <h2>6. Pre-Deploy Checklist</h2>
+
+  <ul class="checklist">
+    <li>
+      <input type="checkbox" id="c1">
+      <label for="c1"><code>.env</code> and <code>uploads/</code> are in <code>.gitignore</code></label>
+    </li>
+    <li>
+      <input type="checkbox" id="c2">
+      <label for="c2"><code>npm run build &amp;&amp; node build</code> succeeds locally — test the production build before deploying</label>
+    </li>
+    <li>
+      <input type="checkbox" id="c3">
+      <label for="c3"><code>fly launch</code> has been run — <code>fly.toml</code> and <code>Dockerfile</code> exist</label>
+    </li>
+    <li>
+      <input type="checkbox" id="c4">
+      <label for="c4"><code>[[mounts]]</code> section is in <code>fly.toml</code>, destination <code>/app/data</code></label>
+    </li>
+    <li>
+      <input type="checkbox" id="c5">
+      <label for="c5"><code>fly volumes create data …</code> has been run — the volume exists</label>
+    </li>
+    <li>
+      <input type="checkbox" id="c6">
+      <label for="c6"><code>fly secrets set JWT_SECRET DATABASE_URL IMAGE_STORAGE_PATH</code> — all three are set</label>
+    </li>
+    <li>
+      <input type="checkbox" id="c7">
+      <label for="c7"><code>fly deploy</code> succeeded — app is accessible at <code>*.fly.dev</code></label>
+    </li>
+    <li>
+      <input type="checkbox" id="c8">
+      <label for="c8"><code>fly ssh console -C "npx prisma migrate deploy"</code> run on first deploy</label>
+    </li>
+    <li>
+      <input type="checkbox" id="c9">
+      <label for="c9">Login and registration work at the <code>*.fly.dev</code> URL (tests cookies over HTTPS)</label>
+    </li>
+  </ul>
+
+
+  <!-- ───────────────────────────── QUIZ ─────────────────────────────────── -->
+  <div class="quiz-section">
+    <h2>Check Your Understanding</h2>
+
+    <div class="question" id="q1">
+      <p class="question-text">1. You want to move to Vercel because their CDN is faster. Your app uses SQLite. What must change?</p>
+      <label class="option" onclick="answer(event,'q1','wrong')">
+        <input type="radio" name="q1"> Switch to <code>adapter-vercel</code> — that's all.
+      </label>
+      <label class="option" onclick="answer(event,'q1','correct')">
+        <input type="radio" name="q1"> Switch to <code>adapter-vercel</code> AND replace SQLite with a hosted database (e.g. Neon, PlanetScale, Turso).
+      </label>
+      <label class="option" onclick="answer(event,'q1','wrong')">
+        <input type="radio" name="q1"> You can't use Vercel with Prisma at all.
+      </label>
+      <div class="feedback correct" id="q1-correct">Correct. Vercel's filesystem is ephemeral — SQLite data disappears between requests. You'd keep Prisma but point it at a hosted Postgres or SQLite-compatible service.</div>
+      <div class="feedback wrong" id="q1-wrong">Switching the adapter is necessary but not sufficient. Vercel's filesystem is ephemeral, so SQLite data vanishes. You need a hosted database too.</div>
+    </div>
+
+    <div class="question" id="q2">
+      <p class="question-text">2. You add <code>STRIPE_KEY</code> via <code>fly secrets set STRIPE_KEY=sk_live_…</code> to a running Fly app. When does it take effect?</p>
+      <label class="option" onclick="answer(event,'q2','correct')">
+        <input type="radio" name="q2"> On the next machine restart — Fly triggers a redeploy when secrets change.
+      </label>
+      <label class="option" onclick="answer(event,'q2','wrong')">
+        <input type="radio" name="q2"> Immediately — Fly injects it into the running process.
+      </label>
+      <label class="option" onclick="answer(event,'q2','wrong')">
+        <input type="radio" name="q2"> Never — you'd need to rebuild the Docker image to include the new secret.
+      </label>
+      <div class="feedback correct" id="q2-correct">Correct. <code>fly secrets set</code> triggers a rolling restart of your machines. The new secret is available from <code>process.env</code> in the freshly started Node process — no manual redeploy needed.</div>
+      <div class="feedback wrong" id="q2-wrong">A running Node process won't pick up new env vars mid-flight, but Fly is smarter than a raw VPS — <code>fly secrets set</code> automatically triggers a rolling machine restart, so the new secret is live after a brief redeploy.</div>
+    </div>
+
+    <div class="question" id="q3">
+      <p class="question-text">3. After deploying you notice that new user registrations are failing in production but working in dev. The most likely cause is:</p>
+      <label class="option" onclick="answer(event,'q3','wrong')">
+        <input type="radio" name="q3"> The Dockerfile is wrong.
+      </label>
+      <label class="option" onclick="answer(event,'q3','wrong')">
+        <input type="radio" name="q3"> Prisma isn't installed in production.
+      </label>
+      <label class="option" onclick="answer(event,'q3','correct')">
+        <input type="radio" name="q3"> <code>prisma migrate deploy</code> was never run — the database tables don't exist yet in production.
+      </label>
+      <div class="feedback correct" id="q3-correct">Correct. Fly deploys the app but doesn't touch the database. The SQLite file on the volume is empty until you run <code>fly ssh console -C "npx prisma migrate deploy"</code> to create the schema.</div>
+      <div class="feedback wrong" id="q3-wrong">Prisma is installed via <code>npm ci</code> in the Dockerfile, and Prisma generates the client automatically. The most common first-deploy breakage is forgetting to run <code>prisma migrate deploy</code> — the database schema doesn't exist yet.</div>
+    </div>
+  </div>
+
+
+  <!-- ───────────────────────────── NEXT ─────────────────────────────────── -->
+  <h2>What to Do Now</h2>
+
+  <ol class="step-list">
+    <li>
+      <div class="step-num">1</div>
+      <div class="step-content">
+        Run <code>npm run build &amp;&amp; node build</code> locally and walk through the app.
+        Fix anything that breaks at <code>localhost:3000</code> before touching Fly.
+      </div>
+    </li>
+    <li>
+      <div class="step-num">2</div>
+      <div class="step-content">
+        Follow the deploy steps in section 4. Take them one at a time — each <code>fly</code>
+        command gives you clear output if something is wrong.
+      </div>
+    </li>
+    <li>
+      <div class="step-num">3</div>
+      <div class="step-content">
+        Once live, paste the <code>*.fly.dev</code> URL here. We can tackle any issues together —
+        HTTPS cookie behavior, CORS, domain setup, whatever comes up.
+      </div>
+    </li>
+  </ol>
+
+  <div class="ask-teacher">
+    <p>
+      <strong>Ask your teacher anything.</strong><br>
+      Build failed in Docker? Cookies not setting on HTTPS? Database empty after deploy?<br>
+      Paste the error and we'll work through it.
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function answer(event, qid, result) {
+    const q = document.getElementById(qid);
+    q.querySelectorAll('.option').forEach(o => o.classList.remove('correct', 'wrong'));
+    event.currentTarget.classList.add(result);
+    q.querySelectorAll('.feedback').forEach(f => { f.style.display = 'none'; f.className = 'feedback'; });
+    const fb = document.getElementById(qid + '-' + result);
+    fb.style.display = 'block';
+    fb.className = 'feedback ' + result;
+  }
+</script>
+</body>
+</html>

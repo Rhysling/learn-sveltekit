@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 2: hooks.server.ts — Centralized Middleware</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --orange: #ea580c;
+      --orange-light: #fff7ed;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+      --code-prop: #f8c555;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 6rem;
+    }
+
+    /* ── Header ── */
+    .lesson-header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-tag {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+    .lesson-subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+    .lesson-meta {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* ── Typography ── */
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      color: var(--accent);
+    }
+    p { margin-bottom: 1rem; }
+    a { color: var(--accent); text-decoration: underline; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-left: 3px solid;
+      padding: 0.85rem 1rem;
+      border-radius: 0 6px 6px 0;
+      margin: 1.25rem 0;
+      font-size: 0.95rem;
+    }
+    .callout-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .callout.nuxt { background: var(--green-light); border-color: var(--green); }
+    .callout.nuxt .callout-title { color: var(--green); }
+    .callout.note { background: var(--accent-light); border-color: var(--accent); }
+    .callout.note .callout-title { color: var(--accent); }
+    .callout.warn { background: var(--yellow-light); border-color: var(--yellow); }
+    .callout.warn .callout-title { color: var(--yellow); }
+    .callout.teacher { background: var(--orange-light); border-color: var(--orange); }
+    .callout.teacher .callout-title { color: var(--orange); }
+
+    /* ── Code blocks ── */
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.65;
+    }
+    .code-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      background: #e9eaf0;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    pre code { background: none; padding: 0; font-size: inherit; }
+
+    .kw  { color: var(--code-keyword); }
+    .fn  { color: var(--code-fn); }
+    .str { color: var(--code-string); }
+    .cm  { color: var(--code-comment); font-style: italic; }
+    .ty  { color: var(--code-type); }
+    .op  { color: var(--code-op); }
+    .pr  { color: var(--code-prop); }
+
+    /* ── Pipeline diagram ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .pipe-box {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .pipe-box.accent {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .pipe-box.muted {
+      background: #f3f4f6;
+      color: var(--muted);
+      border-style: dashed;
+    }
+    .pipe-arrow {
+      color: var(--muted);
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Before/After ── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.25rem 0 1.5rem;
+    }
+    .compare-panel { }
+    .compare-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.4rem;
+    }
+    .compare-label.before { color: var(--red); }
+    .compare-label.after  { color: var(--green); }
+    .compare pre { margin: 0; font-size: 0.78rem; }
+
+    /* ── Quiz ── */
+    .quiz-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin: 2.5rem 0;
+    }
+    .quiz-section h2 {
+      border-top: none;
+      margin-top: 0;
+      padding-top: 0;
+    }
+    .question {
+      margin-bottom: 1.75rem;
+    }
+    .question-text {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
+    .question-num {
+      display: inline-block;
+      background: var(--accent);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 1.5rem;
+      height: 1.5rem;
+      line-height: 1.5rem;
+      text-align: center;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      flex-shrink: 0;
+    }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.65rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 0.95rem;
+    }
+    .option:hover { border-color: var(--accent); background: var(--accent-light); }
+    .option.correct { background: var(--green-light); border-color: var(--green); color: var(--green); font-weight: 500; }
+    .option.wrong   { background: var(--red-light);   border-color: var(--red);   color: var(--red); }
+    .option.disabled { pointer-events: none; opacity: 0.55; }
+    .option.correct.disabled { opacity: 1; }
+    .option-letter {
+      font-weight: 700;
+      font-size: 0.8rem;
+      min-width: 1.2rem;
+      color: var(--muted);
+    }
+    .option.correct .option-letter { color: var(--green); }
+    .option.wrong   .option-letter { color: var(--red); }
+    .feedback {
+      font-size: 0.875rem;
+      margin-top: 0.6rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      display: none;
+    }
+    .feedback.correct { background: var(--green-light); color: var(--green); }
+    .feedback.wrong   { background: var(--red-light);   color: var(--red); }
+    .feedback.show    { display: block; }
+    .quiz-score {
+      margin-top: 1.5rem;
+      padding: 1rem 1.25rem;
+      background: var(--accent-light);
+      border-radius: 8px;
+      font-weight: 600;
+      display: none;
+    }
+    .quiz-score.show { display: block; }
+    .score-btn {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.6rem 1.4rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .score-btn:hover { opacity: 0.88; }
+
+    /* ── Exercises ── */
+    .exercises {
+      margin-top: 2.5rem;
+    }
+    .exercise {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .exercise-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .exercise-num {
+      background: var(--accent);
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .exercise-title {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .exercise-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    .exercise-check input[type="checkbox"] {
+      margin-top: 0.2rem;
+      accent-color: var(--accent);
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .exercise-check label { cursor: pointer; line-height: 1.5; }
+    .verify-box {
+      background: var(--green-light);
+      border-left: 3px solid var(--green);
+      border-radius: 0 6px 6px 0;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.875rem;
+      margin-top: 0.75rem;
+      color: #065f46;
+    }
+    .verify-box strong { color: var(--green); }
+
+    /* ── Summary ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+    }
+    .summary-card h4 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .summary-card ul {
+      padding-left: 1.1rem;
+      font-size: 0.9rem;
+    }
+    .summary-card li { margin-bottom: 0.25rem; }
+
+    @media (max-width: 620px) {
+      .compare { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Header ── -->
+  <header class="lesson-header">
+    <div class="lesson-tag">Lesson 2 · SvelteKit</div>
+    <h1>hooks.server.ts<br>Centralized Middleware</h1>
+    <p class="lesson-subtitle">Move auth out of every load function. Run logic once, for every request.</p>
+    <div class="lesson-meta">
+      <span>⏱ ~20 min</span>
+      <span>📋 Quiz + 4 exercises</span>
+      <span>🎯 Tied to: auth, protected routes</span>
+    </div>
+  </header>
+
+  <!-- ── Nuxt Bridge ── -->
+  <div class="callout nuxt">
+    <div class="callout-title">Coming from Nuxt</div>
+    <code>hooks.server.ts</code> is SvelteKit's equivalent of <strong>Nuxt server middleware</strong> (<code>server/middleware/*.ts</code>). It runs on every request before your routes handle anything. The <code>event.locals</code> object is the same idea as Nuxt's <code>event.context</code> — a place to attach request-scoped data for downstream handlers.
+  </div>
+
+  <!-- ── The Problem ── -->
+  <h2>The Problem This Solves</h2>
+
+  <p>Right now, your <code>/admin</code> route reads the JWT cookie and verifies it inside its own <code>load</code> function. Every protected route has to do this. That's a problem:</p>
+
+  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
+    <li style="margin-bottom: 0.4rem;">Duplicated auth logic across every protected <code>+page.server.ts</code></li>
+    <li style="margin-bottom: 0.4rem;">If you change how auth works, you update every file</li>
+    <li style="margin-bottom: 0.4rem;">No single place to reason about "who is allowed where"</li>
+  </ul>
+
+  <p><strong>hooks.server.ts</strong> fixes this. You verify the token once, attach the user to the request pipeline, and every load function simply reads <code>locals.user</code>.</p>
+
+  <!-- ── Pipeline ── -->
+  <h2>The Request Pipeline</h2>
+
+  <p>Every incoming request in SvelteKit flows through this pipeline:</p>
+
+  <div class="pipeline">
+    <div class="pipe-box muted">Browser Request</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box accent">handle()<br><small style="opacity:0.8;font-size:0.7rem;">hooks.server.ts</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box">resolve(event)</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box">load() / action()<br><small style="color:var(--muted);font-size:0.7rem;">+page.server.ts</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box muted">Response</div>
+  </div>
+
+  <p>The <code>handle</code> hook is a <strong>gate</strong>. You can inspect and modify the request before it reaches your routes, or short-circuit it entirely (e.g., redirect an unauthenticated user before the load function even runs).</p>
+
+  <!-- ── The handle Hook ── -->
+  <h2>The handle Hook</h2>
+
+  <p>Create the file <code>src/hooks.server.ts</code> and export a function called <code>handle</code>:</p>
+
+  <div class="code-label">src/hooks.server.ts</div>
+  <pre><code><span class="kw">import</span> <span class="kw">type</span> { <span class="ty">Handle</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+
+<span class="kw">export</span> <span class="kw">const</span> <span class="pr">handle</span><span class="op">:</span> <span class="ty">Handle</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">event</span>, <span class="pr">resolve</span> }) <span class="op">=></span> {
+  <span class="cm">// pre-processing: runs before the load function</span>
+  <span class="kw">const</span> <span class="pr">response</span> <span class="op">=</span> <span class="kw">await</span> <span class="fn">resolve</span>(<span class="pr">event</span>);
+  <span class="cm">// post-processing: runs after the load function</span>
+  <span class="kw">return</span> <span class="pr">response</span>;
+};</code></pre>
+
+  <p>Two parameters:</p>
+  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
+    <li style="margin-bottom: 0.4rem;"><strong><code>event</code></strong> — the full request context: <code>event.url</code>, <code>event.cookies</code>, <code>event.request</code>, <code>event.locals</code>, and more</li>
+    <li style="margin-bottom: 0.4rem;"><strong><code>resolve</code></strong> — calls the matched route's <code>load</code> function and renders the response. You must call this and return what it gives you — or return your own <code>Response</code> instead</li>
+  </ul>
+
+  <div class="callout note">
+    <div class="callout-title">Key rule</div>
+    If you don't call <code>resolve(event)</code>, SvelteKit never reaches your route. This is how you intercept and redirect — return a <code>redirect()</code> before calling resolve.
+  </div>
+
+  <!-- ── event.locals ── -->
+  <h2>event.locals — Passing Data Down the Pipeline</h2>
+
+  <p><code>event.locals</code> is a plain object that persists for the lifetime of a single request. You write to it in <code>handle</code>, and read from it in load functions and <code>+server.ts</code> routes.</p>
+
+  <p>Think of it as the request's "shared memory" — only for server-side code, only for one request.</p>
+
+  <div class="code-label">src/hooks.server.ts — writing to locals</div>
+  <pre><code><span class="pr">event</span>.<span class="pr">locals</span>.<span class="pr">user</span> <span class="op">=</span> <span class="pr">verifiedPayload</span>;  <span class="cm">// set it here</span></code></pre>
+
+  <div class="code-label">src/routes/admin/+page.server.ts — reading locals</div>
+  <pre><code><span class="kw">export</span> <span class="kw">const</span> <span class="pr">load</span><span class="op">:</span> <span class="ty">PageServerLoad</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">locals</span> }) <span class="op">=></span> {
+  <span class="kw">const</span> <span class="pr">user</span> <span class="op">=</span> <span class="pr">locals</span>.<span class="pr">user</span>;  <span class="cm">// read it here — no cookie/JWT needed</span>
+};</code></pre>
+
+  <h3>Typing event.locals with app.d.ts</h3>
+
+  <p>TypeScript doesn't know what you'll put in <code>event.locals</code> unless you declare it. SvelteKit provides a global <code>App</code> namespace for this — you extend it in <code>src/app.d.ts</code>:</p>
+
+  <div class="code-label">src/app.d.ts — declare the shape of event.locals</div>
+  <pre><code><span class="kw">import</span> <span class="kw">type</span> { <span class="ty">AuthTokenPayload</span> } <span class="kw">from</span> <span class="str">'$lib/types/auth'</span>;
+
+<span class="kw">declare global</span> {
+  <span class="kw">namespace</span> <span class="ty">App</span> {
+    <span class="kw">interface</span> <span class="ty">Locals</span> {
+      <span class="pr">user</span><span class="op">:</span> <span class="ty">AuthTokenPayload</span> <span class="op">|</span> <span class="kw">null</span>;
+    }
+  }
+}
+
+<span class="kw">export</span> {};</code></pre>
+
+  <p>After this, <code>event.locals.user</code> is fully typed everywhere — in <code>handle</code>, in <code>load</code> functions, and in <code>+server.ts</code> routes. <a href="https://svelte.dev/docs/kit/types#App" target="_blank">Official reference →</a></p>
+
+  <div class="callout warn">
+    <div class="callout-title">Why store AuthTokenPayload instead of SessionUser?</div>
+    <code>AuthTokenPayload</code> includes <code>userId</code> — which you'll need when you start making database queries in load functions (e.g., fetching a user's records). <code>SessionUser</code> only has display info. Store the richer type in locals; project it to a narrower type when you return it from <code>load</code>.
+  </div>
+
+  <!-- ── The Auth Pattern ── -->
+  <h2>The Auth Pattern: Verify Once, Use Everywhere</h2>
+
+  <p>Here's the canonical pattern for JWT auth in SvelteKit hooks:</p>
+
+  <div class="code-label">src/hooks.server.ts</div>
+  <pre><code><span class="kw">import</span> <span class="kw">type</span> { <span class="ty">Handle</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+<span class="kw">import</span> { <span class="fn">verifyToken</span> } <span class="kw">from</span> <span class="str">'$lib/server/auth'</span>;
+
+<span class="kw">export</span> <span class="kw">const</span> <span class="pr">handle</span><span class="op">:</span> <span class="ty">Handle</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">event</span>, <span class="pr">resolve</span> }) <span class="op">=></span> {
+  <span class="kw">const</span> <span class="pr">token</span> <span class="op">=</span> <span class="pr">event</span>.<span class="pr">cookies</span>.<span class="fn">get</span>(<span class="str">'token'</span>);
+  <span class="pr">event</span>.<span class="pr">locals</span>.<span class="pr">user</span> <span class="op">=</span> <span class="pr">token</span> <span class="op">?</span> <span class="kw">await</span> <span class="fn">verifyToken</span>(<span class="pr">token</span>) <span class="op">:</span> <span class="kw">null</span>;
+  <span class="kw">return</span> <span class="fn">resolve</span>(<span class="pr">event</span>);
+};</code></pre>
+
+  <p>That's it. Now every load function, every server route, and every form action has access to <code>event.locals.user</code> without touching a cookie or running a JWT verify call.</p>
+
+  <p>Compare what your <code>/admin</code> load function looks like before and after:</p>
+
+  <div class="compare">
+    <div class="compare-panel">
+      <div class="compare-label before">✗ Before — repeated auth logic</div>
+      <pre><code><span class="kw">export</span> <span class="kw">const</span> <span class="pr">load</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">cookies</span> }) <span class="op">=></span> {
+  <span class="kw">const</span> <span class="pr">token</span> <span class="op">=</span> <span class="pr">cookies</span>.<span class="fn">get</span>(<span class="str">'token'</span>);
+  <span class="kw">if</span> (<span class="op">!</span><span class="pr">token</span>) <span class="kw">throw</span> <span class="fn">redirect</span>(<span class="op">303</span>, <span class="str">'/'</span>);
+  <span class="kw">const</span> <span class="pr">payload</span> <span class="op">=</span> <span class="kw">await</span> <span class="fn">verifyToken</span>(<span class="pr">token</span>);
+  <span class="kw">if</span> (<span class="op">!</span><span class="pr">payload</span>) <span class="kw">throw</span> <span class="fn">redirect</span>(<span class="op">303</span>, <span class="str">'/'</span>);
+  <span class="kw">return</span> { <span class="pr">user</span>: { <span class="pr">email</span>: <span class="pr">payload</span>.<span class="pr">email</span>, <span class="pr">name</span>: <span class="pr">payload</span>.<span class="pr">name</span> } };
+};</code></pre>
+    </div>
+    <div class="compare-panel">
+      <div class="compare-label after">✓ After — locals already set</div>
+      <pre><code><span class="kw">export</span> <span class="kw">const</span> <span class="pr">load</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">locals</span> }) <span class="op">=></span> {
+  <span class="kw">if</span> (<span class="op">!</span><span class="pr">locals</span>.<span class="pr">user</span>) <span class="kw">throw</span> <span class="fn">redirect</span>(<span class="op">303</span>, <span class="str">'/'</span>);
+  <span class="kw">const</span> { <span class="pr">email</span>, <span class="pr">name</span> } <span class="op">=</span> <span class="pr">locals</span>.<span class="pr">user</span>;
+  <span class="kw">return</span> { <span class="pr">user</span>: { <span class="pr">email</span>, <span class="pr">name</span> } };
+};</code></pre>
+    </div>
+  </div>
+
+  <!-- ── Route Guarding ── -->
+  <h2>Route Guarding: Two Approaches</h2>
+
+  <h3>Approach A — Guard in the load function (simple, explicit)</h3>
+
+  <p>The hook sets <code>locals.user</code>. The load function decides whether to redirect:</p>
+
+  <div class="code-label">+page.server.ts (any protected route)</div>
+  <pre><code><span class="kw">export</span> <span class="kw">const</span> <span class="pr">load</span><span class="op">:</span> <span class="ty">PageServerLoad</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">locals</span> }) <span class="op">=></span> {
+  <span class="kw">if</span> (<span class="op">!</span><span class="pr">locals</span>.<span class="pr">user</span>) <span class="kw">throw</span> <span class="fn">redirect</span>(<span class="op">303</span>, <span class="str">'/'</span>);
+  <span class="cm">// ... rest of load</span>
+};</code></pre>
+
+  <p>Best for most apps. Each route remains self-documenting — you can see at a glance which routes are protected.</p>
+
+  <h3>Approach B — Guard in handle (centralized, declarative)</h3>
+
+  <p>The hook itself redirects unauthenticated requests to protected paths:</p>
+
+  <div class="code-label">src/hooks.server.ts — with route guard</div>
+  <pre><code><span class="kw">const</span> <span class="pr">protectedPaths</span> <span class="op">=</span> [<span class="str">'/admin'</span>, <span class="str">'/dashboard'</span>];
+
+<span class="kw">export</span> <span class="kw">const</span> <span class="pr">handle</span><span class="op">:</span> <span class="ty">Handle</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">event</span>, <span class="pr">resolve</span> }) <span class="op">=></span> {
+  <span class="kw">const</span> <span class="pr">token</span> <span class="op">=</span> <span class="pr">event</span>.<span class="pr">cookies</span>.<span class="fn">get</span>(<span class="str">'token'</span>);
+  <span class="pr">event</span>.<span class="pr">locals</span>.<span class="pr">user</span> <span class="op">=</span> <span class="pr">token</span> <span class="op">?</span> <span class="kw">await</span> <span class="fn">verifyToken</span>(<span class="pr">token</span>) <span class="op">:</span> <span class="kw">null</span>;
+
+  <span class="kw">const</span> <span class="pr">isProtected</span> <span class="op">=</span> <span class="pr">protectedPaths</span>.<span class="fn">some</span>(
+    (<span class="pr">path</span>) <span class="op">=></span> <span class="pr">event</span>.<span class="pr">url</span>.<span class="pr">pathname</span>.<span class="fn">startsWith</span>(<span class="pr">path</span>)
+  );
+
+  <span class="kw">if</span> (<span class="pr">isProtected</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="pr">event</span>.<span class="pr">locals</span>.<span class="pr">user</span>) {
+    <span class="kw">throw</span> <span class="fn">redirect</span>(<span class="op">303</span>, <span class="str">'/'</span>);
+  }
+
+  <span class="kw">return</span> <span class="fn">resolve</span>(<span class="pr">event</span>);
+};</code></pre>
+
+  <p>Best when you have many protected routes or want a single authoritative list. The redirect happens <em>before</em> the load function even starts — so no wasted work.</p>
+
+  <!-- ── sequence() ── -->
+  <h2>Composing Multiple Hooks with sequence()</h2>
+
+  <p>As your app grows, you may want separate handle functions for auth, logging, or i18n. SvelteKit provides a <code>sequence()</code> helper that chains them:</p>
+
+  <div class="code-label">src/hooks.server.ts</div>
+  <pre><code><span class="kw">import</span> { <span class="fn">sequence</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit/hooks'</span>;
+<span class="kw">import</span> { <span class="fn">verifyToken</span> } <span class="kw">from</span> <span class="str">'$lib/server/auth'</span>;
+<span class="kw">import</span> <span class="kw">type</span> { <span class="ty">Handle</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+
+<span class="kw">const</span> <span class="pr">auth</span><span class="op">:</span> <span class="ty">Handle</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">event</span>, <span class="pr">resolve</span> }) <span class="op">=></span> {
+  <span class="kw">const</span> <span class="pr">token</span> <span class="op">=</span> <span class="pr">event</span>.<span class="pr">cookies</span>.<span class="fn">get</span>(<span class="str">'token'</span>);
+  <span class="pr">event</span>.<span class="pr">locals</span>.<span class="pr">user</span> <span class="op">=</span> <span class="pr">token</span> <span class="op">?</span> <span class="kw">await</span> <span class="fn">verifyToken</span>(<span class="pr">token</span>) <span class="op">:</span> <span class="kw">null</span>;
+  <span class="kw">return</span> <span class="fn">resolve</span>(<span class="pr">event</span>);
+};
+
+<span class="kw">const</span> <span class="pr">logger</span><span class="op">:</span> <span class="ty">Handle</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">event</span>, <span class="pr">resolve</span> }) <span class="op">=></span> {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`${event.request.method} ${event.url.pathname}`</span>);
+  <span class="kw">return</span> <span class="fn">resolve</span>(<span class="pr">event</span>);
+};
+
+<span class="kw">export</span> <span class="kw">const</span> <span class="pr">handle</span> <span class="op">=</span> <span class="fn">sequence</span>(<span class="pr">logger</span>, <span class="pr">auth</span>);
+<span class="cm">// logger runs first, then auth — order matters</span></code></pre>
+
+  <p><a href="https://svelte.dev/docs/kit/hooks#Server-hooks-handle" target="_blank">Official handle docs →</a></p>
+
+  <!-- ── Bonus: handleError ── -->
+  <h2>Bonus: handleError</h2>
+
+  <p>There's a second common hook: <code>handleError</code>. It runs whenever an unexpected error escapes a load function or action — giving you a chance to log it and return a safe user-facing message:</p>
+
+  <div class="code-label">src/hooks.server.ts</div>
+  <pre><code><span class="kw">export</span> <span class="kw">const</span> <span class="pr">handleError</span> <span class="op">=</span> ({ <span class="pr">error</span>, <span class="pr">event</span> }) <span class="op">=></span> {
+  <span class="fn">console</span>.<span class="fn">error</span>(<span class="str">'Unhandled error:'</span>, <span class="pr">error</span>);
+  <span class="kw">return</span> { <span class="pr">message</span><span class="op">:</span> <span class="str">'Something went wrong.'</span> };
+};</code></pre>
+
+  <p>The return value becomes <code>$page.error</code> in your error page. <a href="https://svelte.dev/docs/kit/hooks#Shared-hooks-handleError" target="_blank">Official handleError docs →</a></p>
+
+  <!-- ── Quiz ── -->
+  <div class="quiz-section">
+    <h2>Quiz — Check Your Understanding</h2>
+    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Click an option to check your answer immediately.</p>
+
+    <!-- Q1 -->
+    <div class="question" id="q1">
+      <div class="question-text"><span class="question-num">1</span> What file do you create to add server-side middleware to a SvelteKit app?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">A</span> src/middleware.server.ts</div>
+        <div class="option" onclick="answer(this,'q1',true)"><span class="option-letter">B</span> src/hooks.server.ts</div>
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">C</span> src/hooks.ts</div>
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">D</span> src/server.hooks.ts</div>
+      </div>
+      <div class="feedback wrong" id="q1-wrong">Not quite — SvelteKit looks for a specific filename. <code>hooks.ts</code> is the universal hooks file (runs on server and client), but for server-only middleware it's <code>hooks.server.ts</code>.</div>
+      <div class="feedback correct" id="q1-correct">Correct! SvelteKit automatically picks up <code>src/hooks.server.ts</code> — no registration needed. <code>hooks.ts</code> also exists for shared client+server hooks.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question" id="q2">
+      <div class="question-text"><span class="question-num">2</span> The <code>handle</code> function receives two arguments. What are they?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">A</span> { request, response }</div>
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">B</span> { req, res }</div>
+        <div class="option" onclick="answer(this,'q2',true)"><span class="option-letter">C</span> { event, resolve }</div>
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">D</span> { context, next }</div>
+      </div>
+      <div class="feedback wrong" id="q2-wrong">That's a different framework's convention. SvelteKit uses its own naming — <code>event</code> is the full request context, and <code>resolve</code> is the function that calls your route's load function.</div>
+      <div class="feedback correct" id="q2-correct">Correct! <code>event</code> gives you everything about the request (URL, cookies, locals…) and <code>resolve</code> is how you delegate to the matched route. You must call and return <code>resolve(event)</code> unless you're short-circuiting entirely.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question" id="q3">
+      <div class="question-text"><span class="question-num">3</span> Where do you put data that needs to flow from <code>handle</code> to a <code>load</code> function, within the same request?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">A</span> event.data</div>
+        <div class="option" onclick="answer(this,'q3',true)"><span class="option-letter">B</span> event.locals</div>
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">C</span> event.context</div>
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">D</span> event.store</div>
+      </div>
+      <div class="feedback wrong" id="q3-wrong"><code>event.context</code> is Nuxt/Nitro's equivalent — but SvelteKit uses <code>event.locals</code>. No <code>event.data</code> or <code>event.store</code> exist.</div>
+      <div class="feedback correct" id="q3-correct">Correct! <code>event.locals</code> is the request-scoped shared memory. Write to it in <code>handle</code>, read from it in <code>load</code>, <code>+server.ts</code> routes, and form actions — all within the same request lifecycle.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question" id="q4">
+      <div class="question-text"><span class="question-num">4</span> Which file do you edit to add TypeScript types to <code>event.locals</code>?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">A</span> src/lib/types/locals.ts</div>
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">B</span> tsconfig.json</div>
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">C</span> vite.config.ts</div>
+        <div class="option" onclick="answer(this,'q4',true)"><span class="option-letter">D</span> src/app.d.ts</div>
+      </div>
+      <div class="feedback wrong" id="q4-wrong">SvelteKit provides a global <code>App</code> namespace for typing internal objects like <code>locals</code>, <code>PageData</code>, and <code>Error</code>. The right place for this is <code>src/app.d.ts</code>.</div>
+      <div class="feedback correct" id="q4-correct">Correct! <code>src/app.d.ts</code> is where you extend the <code>App</code> namespace. SvelteKit automatically picks it up — no imports needed. The <code>App.Locals</code> interface types <code>event.locals</code> everywhere in one shot.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question" id="q5">
+      <div class="question-text"><span class="question-num">5</span> In <code>handle</code>, you return a <code>redirect(303, '/')</code> <em>without</em> calling <code>resolve(event)</code>. What happens?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">A</span> The redirect is queued; the load function still runs</div>
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">B</span> SvelteKit throws an error — you must call resolve first</div>
+        <div class="option" onclick="answer(this,'q5',true)"><span class="option-letter">C</span> The load function never runs; the redirect is sent immediately</div>
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">D</span> The redirect is ignored and the route loads normally</div>
+      </div>
+      <div class="feedback wrong" id="q5-wrong">Remember: <code>resolve(event)</code> is what invokes the route's load function. If you return before calling it, SvelteKit sends your response (the redirect) and the route never runs. This is why hook-level guards are so efficient.</div>
+      <div class="feedback correct" id="q5-correct">Correct! The hook is a gate. Returning early (with a redirect, a custom Response, or an error) prevents the load function from ever running — no wasted database calls or auth checks on the route side.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question" id="q6">
+      <div class="question-text"><span class="question-num">6</span> You have three separate <code>Handle</code> functions: <code>auth</code>, <code>logger</code>, <code>i18n</code>. How do you export them all as the single <code>handle</code>?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">A</span> Export all three as named exports</div>
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">B</span> Chain them with <code>.then()</code></div>
+        <div class="option" onclick="answer(this,'q6',true)"><span class="option-letter">C</span> Use the <code>sequence()</code> helper from <code>@sveltejs/kit/hooks</code></div>
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">D</span> Create a <code>handleAll</code> export</div>
+      </div>
+      <div class="feedback wrong" id="q6-wrong">SvelteKit only looks for one <code>handle</code> export, and Handle functions aren't Promises so <code>.then()</code> doesn't apply. The <code>sequence()</code> helper was made exactly for this — it composes Handle functions and runs them in order.</div>
+      <div class="feedback correct" id="q6-correct">Correct! <code>sequence(logger, auth, i18n)</code> runs them left-to-right. Each handler calls <code>resolve</code> which passes control to the next. If any handler returns early (redirect, error), the chain stops there.</div>
+    </div>
+
+    <button class="score-btn" onclick="showScore()">Show my score</button>
+    <div class="quiz-score" id="quiz-score"></div>
+  </div>
+
+  <!-- ── Hands-On Exercises ── -->
+  <div class="exercises">
+    <h2>Hands-On Exercises</h2>
+    <p>These exercises modify your real project. By the end, your app will have a proper auth middleware layer.</p>
+
+    <!-- Exercise 1 -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 1</span>
+        <span class="exercise-title">Create hooks.server.ts with a request logger</span>
+      </div>
+      <p style="font-size:0.9rem; margin-bottom: 1rem;">Start simple. Create the file and confirm the hook runs on every request.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1a">
+        <label for="e1a">Create <code>src/hooks.server.ts</code> with this content:</label>
+      </div>
+      <pre><code><span class="kw">import</span> <span class="kw">type</span> { <span class="ty">Handle</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+
+<span class="kw">export</span> <span class="kw">const</span> <span class="pr">handle</span><span class="op">:</span> <span class="ty">Handle</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">event</span>, <span class="pr">resolve</span> }) <span class="op">=></span> {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">`<span class="op">${</span><span class="pr">event</span>.<span class="pr">request</span>.<span class="pr">method</span><span class="op">}</span> <span class="op">${</span><span class="pr">event</span>.<span class="pr">url</span>.<span class="pr">pathname</span><span class="op">}</span>`</span>);
+  <span class="kw">return</span> <span class="fn">resolve</span>(<span class="pr">event</span>);
+};</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1b">
+        <label for="e1b">Run <code>npm run dev</code> and open any page in the browser. You should see <code>GET /</code> (or similar) printed in the terminal.</label>
+      </div>
+
+      <div class="verify-box">
+        <strong>✓ Verified when:</strong> Terminal shows request logs for every navigation. Note that SvelteKit's internal requests (like HMR) may also appear — that's expected.
+      </div>
+    </div>
+
+    <!-- Exercise 2 -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 2</span>
+        <span class="exercise-title">Create src/app.d.ts and type event.locals</span>
+      </div>
+      <p style="font-size:0.9rem; margin-bottom: 1rem;">Add TypeScript awareness of <code>locals.user</code> across the entire app.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2a">
+        <label for="e2a">Create <code>src/app.d.ts</code> with this content:</label>
+      </div>
+      <pre><code><span class="kw">import</span> <span class="kw">type</span> { <span class="ty">AuthTokenPayload</span> } <span class="kw">from</span> <span class="str">'$lib/types/auth'</span>;
+
+<span class="kw">declare global</span> {
+  <span class="kw">namespace</span> <span class="ty">App</span> {
+    <span class="kw">interface</span> <span class="ty">Locals</span> {
+      <span class="pr">user</span><span class="op">:</span> <span class="ty">AuthTokenPayload</span> <span class="op">|</span> <span class="kw">null</span>;
+    }
+  }
+}
+
+<span class="kw">export</span> {};</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2b">
+        <label for="e2b">In <code>hooks.server.ts</code>, try typing <code>event.locals.</code> — your editor should now autocomplete <code>user</code>. If you hover <code>event.locals.user</code>, TypeScript should show the <code>AuthTokenPayload | null</code> type.</label>
+      </div>
+
+      <div class="verify-box">
+        <strong>✓ Verified when:</strong> TypeScript gives you autocomplete on <code>event.locals.user</code> and shows no type errors. If you see a "property 'user' does not exist" error, make sure <code>app.d.ts</code> is at <code>src/app.d.ts</code> (not inside <code>lib/</code>).
+      </div>
+    </div>
+
+    <!-- Exercise 3 -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 3</span>
+        <span class="exercise-title">Add JWT verification to the hook</span>
+      </div>
+      <p style="font-size:0.9rem; margin-bottom: 1rem;">Expand the hook to verify the auth cookie and populate <code>locals.user</code> on every request.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3a">
+        <label for="e3a">Update <code>src/hooks.server.ts</code> to this:</label>
+      </div>
+      <pre><code><span class="kw">import</span> <span class="kw">type</span> { <span class="ty">Handle</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+<span class="kw">import</span> { <span class="fn">verifyToken</span> } <span class="kw">from</span> <span class="str">'$lib/server/auth'</span>;
+
+<span class="kw">export</span> <span class="kw">const</span> <span class="pr">handle</span><span class="op">:</span> <span class="ty">Handle</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">event</span>, <span class="pr">resolve</span> }) <span class="op">=></span> {
+  <span class="kw">const</span> <span class="pr">token</span> <span class="op">=</span> <span class="pr">event</span>.<span class="pr">cookies</span>.<span class="fn">get</span>(<span class="str">'token'</span>);
+  <span class="pr">event</span>.<span class="pr">locals</span>.<span class="pr">user</span> <span class="op">=</span> <span class="pr">token</span> <span class="op">?</span> <span class="kw">await</span> <span class="fn">verifyToken</span>(<span class="pr">token</span>) <span class="op">:</span> <span class="kw">null</span>;
+  <span class="kw">return</span> <span class="fn">resolve</span>(<span class="pr">event</span>);
+};</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3b">
+        <label for="e3b">Open your app while logged in. Then add a temporary log: <code>console.log('user:', event.locals.user)</code> before <code>resolve</code>. Reload a page — you should see your user object in the terminal. Remove the log when done.</label>
+      </div>
+
+      <div class="verify-box">
+        <strong>✓ Verified when:</strong> When logged in, the terminal shows your user object (email, name, userId). When logged out, it shows <code>null</code>.
+      </div>
+    </div>
+
+    <!-- Exercise 4 -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 4</span>
+        <span class="exercise-title">Simplify /admin to use locals.user</span>
+      </div>
+      <p style="font-size:0.9rem; margin-bottom: 1rem;">Remove the duplicated auth logic from the admin load function — <code>hooks.server.ts</code> has already done the work.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e4a">
+        <label for="e4a">Replace the contents of <code>src/routes/admin/+page.server.ts</code> with:</label>
+      </div>
+      <pre><code><span class="kw">import</span> { <span class="fn">redirect</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+<span class="kw">import</span> <span class="kw">type</span> { <span class="ty">PageServerLoad</span> } <span class="kw">from</span> <span class="str">'./$types'</span>;
+
+<span class="kw">export</span> <span class="kw">const</span> <span class="pr">load</span><span class="op">:</span> <span class="ty">PageServerLoad</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">locals</span> }) <span class="op">=></span> {
+  <span class="kw">if</span> (<span class="op">!</span><span class="pr">locals</span>.<span class="pr">user</span>) <span class="kw">throw</span> <span class="fn">redirect</span>(<span class="op">303</span>, <span class="str">'/'</span>);
+
+  <span class="kw">const</span> { <span class="pr">email</span>, <span class="pr">name</span> } <span class="op">=</span> <span class="pr">locals</span>.<span class="pr">user</span>;
+  <span class="kw">return</span> { <span class="pr">user</span><span class="op">:</span> { <span class="pr">email</span>, <span class="pr">name</span> } };
+};</code></pre>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e4b">
+        <label for="e4b">Test the protected route: log out, then navigate directly to <code>/admin</code>. You should be redirected. Log in, then navigate to <code>/admin</code> — it should load normally.</label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e4c">
+        <label for="e4c">Notice what was removed: the cookie read, the <code>verifyToken</code> call, and the null check on payload. That's 5 lines of repeated logic eliminated — and any new protected route you add can now do the same in one line.</label>
+      </div>
+
+      <div class="verify-box">
+        <strong>✓ Verified when:</strong> The admin page behaves identically to before — unauthenticated users are redirected, authenticated users see their data — but the load function is now 5 lines instead of 14.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Summary ── -->
+  <h2>What You Learned</h2>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <h4>New Concepts</h4>
+      <ul>
+        <li><code>src/hooks.server.ts</code> — the file</li>
+        <li><code>handle({ event, resolve })</code> — the hook</li>
+        <li><code>event.locals</code> — request-scoped data</li>
+        <li><code>src/app.d.ts</code> — typing locals</li>
+        <li><code>sequence()</code> — composing hooks</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h4>Applied to your project</h4>
+      <ul>
+        <li>JWT verified once per request, not per route</li>
+        <li><code>locals.user</code> available everywhere server-side</li>
+        <li>Admin route simplified to a one-line guard</li>
+        <li>Foundation for every future protected route</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── What's Next ── -->
+  <div class="callout note" style="margin-top: 2rem;">
+    <div class="callout-title">What's next</div>
+    Now that <code>locals.user</code> flows through every request, the next lesson will explore <strong>Svelte 5 runes in depth</strong> — <code>$state</code>, <code>$derived</code>, and <code>$effect</code> — and how to use them to build reactive, stateful UI components beyond the basics you've already seen with <code>$props()</code>.
+  </div>
+
+  <!-- ── Ask Your Teacher ── -->
+  <div class="callout teacher" style="margin-top: 1.5rem;">
+    <div class="callout-title">Ask your teacher</div>
+    Anything unclear? Ask a follow-up right in the agent. Good questions to explore:
+    <ul style="margin-top: 0.5rem; padding-left: 1.25rem;">
+      <li>Why does <code>handle</code> run for API routes too — and how do I skip auth for public endpoints?</li>
+      <li>How do I expose <code>locals.user</code> to the Svelte component (not just load functions)?</li>
+      <li>What happens if <code>verifyToken</code> throws — and should I handle that in the hook?</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+  const answers = {};
+  const correct = { q1: 1, q2: 2, q3: 1, q4: 3, q5: 2, q6: 2 };
+
+  function answer(el, qid, isCorrect) {
+    if (answers[qid] !== undefined) return;
+    answers[qid] = isCorrect ? 1 : 0;
+
+    const options = el.closest('.question').querySelectorAll('.option');
+    options.forEach(o => o.classList.add('disabled'));
+
+    if (isCorrect) {
+      el.classList.add('correct');
+      document.getElementById(qid + '-correct').classList.add('show');
+    } else {
+      el.classList.add('wrong');
+      document.getElementById(qid + '-wrong').classList.add('show');
+      // Reveal the correct option
+      const correctIndex = correct[qid];
+      options[correctIndex].classList.add('correct');
+      options[correctIndex].classList.remove('disabled');
+    }
+  }
+
+  function showScore() {
+    const total = Object.keys(correct).length;
+    const score = Object.values(answers).reduce((a, b) => a + b, 0);
+    const unanswered = total - Object.keys(answers).length;
+    const el = document.getElementById('quiz-score');
+    const pct = Math.round((score / total) * 100);
+    let msg = '';
+    if (pct === 100) msg = 'Perfect score. You have a solid mental model of hooks.';
+    else if (pct >= 80) msg = 'Strong. Review the questions you missed, then move to the exercises.';
+    else if (pct >= 60) msg = 'Good start. Re-read the sections for the ones you missed.';
+    else msg = 'Re-read the lesson before trying the exercises — the hands-on work will make more sense.';
+
+    el.innerHTML = `<div style="font-size:1.4rem;margin-bottom:0.4rem;">${score}/${total} &nbsp;(${pct}%)</div><div style="font-weight:400;color:var(--muted)">${msg}${unanswered ? ` (${unanswered} unanswered)` : ''}</div>`;
+    el.classList.add('show');
+  }
+</script>
+</body>
+</html>

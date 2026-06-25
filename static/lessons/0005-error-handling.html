@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 5: Error Handling in SvelteKit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --orange: #ea580c;
+      --orange-light: #fff7ed;
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+      --code-prop: #f8c555;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+
+    /* ── Header ── */
+    .lesson-header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-tag {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+    .lesson-subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    /* ── Typography ── */
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 0.75rem;
+      padding-top: 0.5rem;
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      color: var(--accent);
+    }
+    p { margin-bottom: 1rem; }
+    ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: var(--accent); }
+    strong { font-weight: 600; }
+
+    /* ── Code blocks ── */
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      margin: 1rem 0 1.5rem;
+    }
+    .filename {
+      background: #2d2d5e;
+      color: #7c81c4;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      padding: 0.3rem 1rem;
+      border-radius: 6px 6px 0 0;
+      margin-bottom: -10px;
+      display: inline-block;
+    }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.9em; }
+    p code, li code {
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+    .kw  { color: var(--code-keyword); }
+    .fn  { color: var(--code-fn); }
+    .str { color: var(--code-string); }
+    .cm  { color: var(--code-comment); font-style: italic; }
+    .ty  { color: var(--code-type); }
+    .op  { color: var(--code-op); }
+    .pr  { color: var(--code-prop); }
+    .nu  { color: #f78c6c; }
+
+    /* ── File tree ── */
+    .file-tree {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.9;
+      margin: 1rem 0 1.5rem;
+    }
+    .file-tree .dir   { color: #89ddff; }
+    .file-tree .file  { color: var(--code-text); }
+    .file-tree .new   { color: #c3e88d; font-weight: 600; }
+    .file-tree .note  { color: var(--code-comment); margin-left: 1rem; font-style: italic; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1.25rem 0;
+      border-left: 4px solid;
+    }
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+    .callout p:last-child { margin-bottom: 0; }
+    .callout.info    { background: var(--accent-light); border-color: var(--accent); }
+    .callout.info .callout-title { color: var(--accent); }
+    .callout.tip     { background: var(--green-light);  border-color: var(--green); }
+    .callout.tip .callout-title  { color: var(--green); }
+    .callout.warn    { background: var(--yellow-light); border-color: var(--yellow); }
+    .callout.warn .callout-title { color: var(--yellow); }
+    .callout.nuxt    { background: var(--teal-light);   border-color: var(--teal); }
+    .callout.nuxt .callout-title { color: var(--teal); }
+    .callout.danger  { background: var(--red-light);    border-color: var(--red); }
+    .callout.danger .callout-title { color: var(--red); }
+
+    /* ── Comparison table ── */
+    .compare {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.9rem;
+    }
+    .compare th {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 700;
+      padding: 0.6rem 1rem;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+    .compare td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .compare tr:last-child td { border-bottom: none; }
+    .compare tr:nth-child(even) td { background: var(--bg); }
+    .compare code { font-size: 0.85em; }
+
+    /* ── Section divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+
+    /* ── Quiz ── */
+    .quiz-section { margin: 2.5rem 0; }
+    .quiz-section h2 { margin-top: 0; }
+    .question-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .question-text {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: var(--bg);
+      font-size: 0.95rem;
+      text-align: left;
+      width: 100%;
+      font-family: inherit;
+    }
+    .option:hover { border-color: var(--accent); background: var(--accent-light); }
+    .option.correct  { border-color: var(--green); background: var(--green-light); }
+    .option.wrong    { border-color: var(--red);   background: var(--red-light); }
+    .option.disabled { cursor: default; pointer-events: none; }
+    .option .marker  { width: 20px; height: 20px; border-radius: 50%; border: 2px solid currentColor; display: grid; place-items: center; flex-shrink: 0; margin-top: 2px; font-size: 0.7rem; font-weight: 700; }
+    .feedback {
+      margin-top: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .feedback.show { display: block; }
+    .feedback.correct { background: var(--green-light); color: var(--green); }
+    .feedback.wrong   { background: var(--red-light);   color: var(--red); }
+
+    /* ── Exercises ── */
+    .exercises-section { margin: 2.5rem 0; }
+    .exercise {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .exercise-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .exercise-number {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .exercise-title { font-weight: 700; font-size: 1rem; }
+    .exercise-done-btn {
+      margin-top: 1rem;
+      padding: 0.5rem 1.25rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .exercise-done-btn:hover { opacity: 0.85; }
+    .exercise-done-btn.done {
+      background: var(--green);
+      cursor: default;
+    }
+    .exercise p:last-of-type { margin-bottom: 0; }
+
+    /* ── Progress ── */
+    .progress-bar-wrap {
+      background: var(--border);
+      border-radius: 999px;
+      height: 6px;
+      margin: 0.75rem 0 0;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 0.35s;
+      width: 0%;
+    }
+    .progress-label { font-size: 0.85rem; color: var(--muted); margin-top: 0.35rem; }
+
+    /* ── Ask your teacher ── */
+    .ask-teacher {
+      background: var(--purple-light);
+      border: 1px solid var(--purple);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-top: 3rem;
+    }
+    .ask-teacher h3 { color: var(--purple); margin-top: 0; }
+    .ask-teacher p:last-child { margin-bottom: 0; }
+
+    /* ── Flow diagram ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 1.25rem 0 1.5rem;
+      font-size: 0.9rem;
+    }
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.7rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+    .flow-step + .flow-step { margin-top: -1px; border-top-left-radius: 0; border-top-right-radius: 0; }
+    .flow-step:first-child { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .flow-step:not(:first-child):not(:last-child) { border-radius: 0; }
+    .flow-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .flow-step.highlight { background: var(--accent-light); border-color: var(--accent); }
+    .flow-step.highlight .flow-icon { }
+    .flow-arrow { text-align: center; color: var(--muted); font-size: 1rem; padding: 0.1rem 0; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Header ── -->
+  <header class="lesson-header">
+    <span class="lesson-tag">Lesson 5 &nbsp;·&nbsp; SvelteKit</span>
+    <h1>Error Handling in SvelteKit</h1>
+    <p class="lesson-subtitle">
+      <code>+error.svelte</code>, <code>error()</code>, and <code>handleError</code>
+    </p>
+  </header>
+
+  <!-- ── What you'll learn ── -->
+  <section>
+    <h2>What you'll learn</h2>
+    <ul>
+      <li>The difference between <strong>expected errors</strong> and <strong>unexpected errors</strong></li>
+      <li>How <code>+error.svelte</code> works as a scoped error boundary</li>
+      <li>How to throw HTTP errors from load functions using <code>error()</code></li>
+      <li>How to read <code>$page.error</code> and <code>$page.status</code> inside an error page</li>
+      <li>How <code>handleError</code> in <code>hooks.server.ts</code> lets you centralise error logging</li>
+    </ul>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Part 1: The Problem ── -->
+  <section>
+    <h2>Part 1 — What happens today when something breaks?</h2>
+
+    <p>
+      Your app has load functions that query Prisma, form actions that validate input, and a
+      protected route group that redirects unauthenticated users. But try visiting
+      <code>/dashboard/some-page-that-doesnt-exist</code> — you'll get a raw SvelteKit 404
+      page that looks nothing like your app.
+    </p>
+
+    <p>
+      Or imagine your Prisma query throws because the database is down. The user sees a generic
+      500 — no context, no "go back" link, no branding. That's what we're fixing today.
+    </p>
+
+    <div class="callout nuxt">
+      <div class="callout-title">Coming from Nuxt</div>
+      <p>
+        Nuxt has a single <code>~/error.vue</code> that catches everything globally. SvelteKit
+        is more granular — each segment of the route tree can have its own <code>+error.svelte</code>,
+        like nested catch blocks. A dashboard error page stays in the dashboard shell; a root
+        error page is the fallback for everything else.
+      </p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Part 2: Two Kinds of Errors ── -->
+  <section>
+    <h2>Part 2 — Expected vs. unexpected errors</h2>
+
+    <p>SvelteKit draws a firm line between two types of errors. Understanding this distinction is the key to using the system correctly.</p>
+
+    <table class="compare">
+      <tr>
+        <th>Type</th>
+        <th>How it's created</th>
+        <th>What the user sees</th>
+        <th>Goes through <code>handleError</code>?</th>
+      </tr>
+      <tr>
+        <td><strong>Expected</strong></td>
+        <td>You throw <code>error(404, 'Not found')</code></td>
+        <td>Your <code>+error.svelte</code> with the message</td>
+        <td>No — you already know about it</td>
+      </tr>
+      <tr>
+        <td><strong>Unexpected</strong></td>
+        <td>Any other thrown error (Prisma crash, null ref, etc.)</td>
+        <td>Your <code>+error.svelte</code> with a <em>generic</em> message</td>
+        <td>Yes — so you can log it</td>
+      </tr>
+    </table>
+
+    <p>
+      <strong>Expected errors</strong> are things you chose to reject: a missing resource, a
+      forbidden action, a bad ID in the URL. You use SvelteKit's <code>error()</code> helper
+      to throw them.
+    </p>
+
+    <p>
+      <strong>Unexpected errors</strong> are bugs: database down, null pointer, bad env var.
+      SvelteKit catches these too and shows your error page, but it <em>hides the message</em>
+      from the user (it could contain sensitive info) and instead calls your <code>handleError</code>
+      hook so you can log it.
+    </p>
+
+    <div class="callout warn">
+      <div class="callout-title">Important distinction</div>
+      <p>
+        <code>fail()</code> is NOT the same as <code>error()</code>. You already use <code>fail()</code>
+        in form actions to return validation errors back to the form — the user stays on the same page.
+        <code>error()</code> is for hard failures that should render the error page instead.
+      </p>
+    </div>
+
+    <h3>Throwing an expected error</h3>
+
+    <p>
+      Import <code>error</code> from <code>@sveltejs/kit</code> and call it anywhere in a
+      load function or form action. The first argument is the HTTP status code, the second is
+      the message.
+    </p>
+
+    <div class="filename">src/routes/notes/[id]/+page.server.ts</div>
+    <pre><code><span class="kw">import</span> { <span class="fn">error</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+<span class="kw">import</span> prisma <span class="kw">from</span> <span class="str">'$lib/server/db'</span>;
+
+<span class="kw">export const</span> <span class="fn">load</span> = <span class="kw">async</span> ({ <span class="pr">params</span> }) => {
+  <span class="kw">const</span> note = <span class="kw">await</span> prisma.<span class="pr">note</span>.<span class="fn">findUnique</span>({
+    <span class="pr">where</span>: { <span class="pr">id</span>: <span class="fn">Number</span>(<span class="pr">params</span>.<span class="pr">id</span>) }
+  });
+
+  <span class="kw">if</span> (!note) {
+    <span class="fn">error</span>(<span class="nu">404</span>, <span class="str">'Note not found'</span>);  <span class="cm">// throws — stops execution</span>
+  }
+
+  <span class="kw">return</span> { note };
+};</code></pre>
+
+    <p>
+      Calling <code>error()</code> throws immediately — nothing after it runs. SvelteKit
+      catches it, sets the HTTP response to 404, and renders the nearest <code>+error.svelte</code>.
+    </p>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Part 3: +error.svelte ── -->
+  <section>
+    <h2>Part 3 — <code>+error.svelte</code>: the error boundary</h2>
+
+    <p>
+      <code>+error.svelte</code> is a special component SvelteKit renders when a load function
+      or action throws. It replaces the normal <code>+page.svelte</code> content but
+      <strong>inherits the surrounding layout</strong> — so your nav, header, and shell stay in place.
+    </p>
+
+    <h3>The two stores available inside <code>+error.svelte</code></h3>
+
+    <p>You access error information via the <code>$page</code> store:</p>
+
+    <div class="filename">src/routes/+error.svelte</div>
+    <pre><code><span class="kw">&lt;script&gt;</span>
+  <span class="kw">import</span> { <span class="pr">page</span> } <span class="kw">from</span> <span class="str">'$app/stores'</span>;
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="kw">&lt;div</span> class=<span class="str">"error-page"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;h1&gt;</span>{$page.status}<span class="kw">&lt;/h1&gt;</span>
+  <span class="kw">&lt;p&gt;</span>{$page.error?.message}<span class="kw">&lt;/p&gt;</span>
+  <span class="kw">&lt;a</span> href=<span class="str">"/"</span><span class="kw">&gt;</span>Go home<span class="kw">&lt;/a&gt;</span>
+<span class="kw">&lt;/div&gt;</span></code></pre>
+
+    <ul>
+      <li><code>$page.status</code> — the HTTP status code (404, 500, etc.)</li>
+      <li><code>$page.error.message</code> — the message from <code>error(404, 'Note not found')</code></li>
+    </ul>
+
+    <div class="callout warn">
+      <div class="callout-title">Unexpected errors hide the message</div>
+      <p>
+        For <em>unexpected</em> errors (unhandled exceptions), <code>$page.error.message</code>
+        is always <code>"Internal Error"</code> regardless of what was thrown. This is intentional
+        — SvelteKit won't leak stack traces or database errors to the browser.
+      </p>
+    </div>
+
+    <h3>Where does <code>+error.svelte</code> go?</h3>
+
+    <p>
+      SvelteKit finds the <em>nearest</em> <code>+error.svelte</code> by walking up the route
+      tree. This is where the power lies.
+    </p>
+
+    <div class="file-tree">
+<span class="dir">src/routes/</span>
+├── <span class="new">+error.svelte</span>          <span class="note">← catches everything (root fallback)</span>
+├── +layout.svelte
+├── <span class="dir">(protected)/</span>
+│   ├── <span class="new">+error.svelte</span>      <span class="note">← catches errors inside protected routes only</span>
+│   ├── +layout.server.ts
+│   └── <span class="dir">dashboard/</span>
+│       └── +page.svelte
+└── <span class="dir">examples/</span>
+    └── <span class="dir">notes/</span>
+        └── +page.svelte
+    </div>
+
+    <p>
+      If the dashboard load throws, SvelteKit renders <code>(protected)/+error.svelte</code>
+      — inside the protected layout shell. The root error page never fires for dashboard errors.
+    </p>
+
+    <p>
+      If a route outside <code>(protected)</code> throws, it bubbles up to
+      <code>+error.svelte</code> at the root.
+    </p>
+
+    <div class="callout tip">
+      <div class="callout-title">Why scoped errors matter</div>
+      <p>
+        Your dashboard has a nav sidebar. If the load throws and the root error page renders,
+        the sidebar disappears — confusing. With a scoped <code>(protected)/+error.svelte</code>,
+        the sidebar stays visible and the error message appears inside it, where the user expects.
+      </p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Part 4: handleError ── -->
+  <section>
+    <h2>Part 4 — <code>handleError</code>: catching the unexpected</h2>
+
+    <p>
+      You already have <code>hooks.server.ts</code> with a <code>handle</code> function. The
+      same file can export a second hook: <code>handleError</code>. It fires whenever an
+      <em>unexpected</em> error escapes a load function or action on the server.
+    </p>
+
+    <p>
+      This is where you'd log to a service like Sentry, write to a log file, or simply
+      <code>console.error</code> in development. The user never sees what you log here.
+    </p>
+
+    <div class="filename">src/hooks.server.ts</div>
+    <pre><code><span class="kw">import type</span> { <span class="ty">Handle</span>, <span class="ty">HandleServerError</span> } <span class="kw">from</span> <span class="str">'@sveltejs/kit'</span>;
+
+<span class="cm">// your existing handle hook...</span>
+<span class="kw">export const</span> <span class="fn">handle</span>: <span class="ty">Handle</span> = <span class="kw">async</span> ({ <span class="pr">event</span>, <span class="fn">resolve</span> }) => {
+  <span class="cm">// ... JWT check, locals.user, etc.</span>
+  <span class="kw">return</span> <span class="fn">resolve</span>(<span class="pr">event</span>);
+};
+
+<span class="cm">// NEW: catches unhandled server errors</span>
+<span class="kw">export const</span> <span class="fn">handleError</span>: <span class="ty">HandleServerError</span> = ({ <span class="pr">error</span>, <span class="pr">event</span> }) => {
+  console.<span class="fn">error</span>(<span class="str">'[Server Error]'</span>, {
+    <span class="pr">path</span>: <span class="pr">event</span>.<span class="pr">url</span>.<span class="pr">pathname</span>,
+    <span class="pr">error</span>
+  });
+
+  <span class="cm">// The returned object becomes $page.error</span>
+  <span class="kw">return</span> {
+    <span class="pr">message</span>: <span class="str">'Something went wrong. Please try again.'</span>
+  };
+};</code></pre>
+
+    <p>
+      The object you <em>return</em> from <code>handleError</code> becomes the shape of
+      <code>$page.error</code> in your error page. The default is <code>{ message: 'Internal Error' }</code>.
+      You can return a custom message (safe to show) while keeping the real error in your logs.
+    </p>
+
+    <div class="callout info">
+      <div class="callout-title">TypeScript: typing the error shape</div>
+      <p>
+        If you extend what <code>handleError</code> returns, update <code>app.d.ts</code> so
+        the type is known everywhere:
+      </p>
+      <pre style="margin: 0.5rem 0 0"><code><span class="cm">// src/app.d.ts</span>
+<span class="kw">declare global</span> {
+  <span class="kw">namespace</span> <span class="ty">App</span> {
+    <span class="kw">interface</span> <span class="ty">Error</span> {
+      <span class="pr">message</span>: <span class="ty">string</span>;
+    }
+    <span class="cm">// ... Locals, PageData, etc.</span>
+  }
+}</code></pre>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Summary diagram ── -->
+  <section>
+    <h2>The full picture</h2>
+
+    <p>Here's how an error in a load function flows through the system:</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <span class="flow-icon">📂</span>
+        <span>Load function runs (e.g. <code>+layout.server.ts</code>)</span>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <span class="flow-icon">💥</span>
+        <span>An error is thrown — either <code>error(404, ...)</code> or an unhandled exception</span>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step highlight">
+        <span class="flow-icon">🎣</span>
+        <span><strong>Unexpected only:</strong> <code>handleError</code> fires in <code>hooks.server.ts</code> — log it here</span>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step highlight">
+        <span class="flow-icon">🖼</span>
+        <span>Nearest <code>+error.svelte</code> renders inside the surrounding layout shell</span>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <span class="flow-icon">📖</span>
+        <span>Component reads <code>$page.status</code> and <code>$page.error.message</code></span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Quiz ── -->
+  <section class="quiz-section">
+    <h2>Quick quiz</h2>
+
+    <div class="question-block" id="q1">
+      <p class="question-text">1. You want to return a validation error from a form action and keep the user on the same page. Which should you use?</p>
+      <div class="options">
+        <button class="option" onclick="answer('q1', this, false)">
+          <span class="marker">A</span>
+          <span><code>error(400, 'Invalid input')</code></span>
+        </button>
+        <button class="option" onclick="answer('q1', this, true)">
+          <span class="marker">B</span>
+          <span><code>fail(400, { error: 'Invalid input' })</code></span>
+        </button>
+        <button class="option" onclick="answer('q1', this, false)">
+          <span class="marker">C</span>
+          <span>Throw a regular <code>new Error('Invalid input')</code></span>
+        </button>
+      </div>
+      <div class="feedback" id="q1-feedback"></div>
+    </div>
+
+    <div class="question-block" id="q2">
+      <p class="question-text">2. Your Prisma query throws because the database is down. What will the user see in <code>$page.error.message</code>?</p>
+      <div class="options">
+        <button class="option" onclick="answer('q2', this, false)">
+          <span class="marker">A</span>
+          <span>The full Prisma error message with the stack trace</span>
+        </button>
+        <button class="option" onclick="answer('q2', this, false)">
+          <span class="marker">B</span>
+          <span>Nothing — the error page won't render</span>
+        </button>
+        <button class="option" onclick="answer('q2', this, true)">
+          <span class="marker">C</span>
+          <span>Whatever your <code>handleError</code> returns (defaults to "Internal Error")</span>
+        </button>
+      </div>
+      <div class="feedback" id="q2-feedback"></div>
+    </div>
+
+    <div class="question-block" id="q3">
+      <p class="question-text">3. You have <code>(protected)/+error.svelte</code> AND a root <code>+error.svelte</code>. An error is thrown in the dashboard load function. Which renders?</p>
+      <div class="options">
+        <button class="option" onclick="answer('q3', this, false)">
+          <span class="marker">A</span>
+          <span>The root <code>+error.svelte</code> — it has higher priority</span>
+        </button>
+        <button class="option" onclick="answer('q3', this, true)">
+          <span class="marker">B</span>
+          <span><code>(protected)/+error.svelte</code> — the nearest one to the error wins</span>
+        </button>
+        <button class="option" onclick="answer('q3', this, false)">
+          <span class="marker">C</span>
+          <span>Both render at the same time</span>
+        </button>
+      </div>
+      <div class="feedback" id="q3-feedback"></div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Exercises ── -->
+  <section class="exercises-section">
+    <h2>Hands-on exercises</h2>
+    <p>Open your <code>learn-sveltekit</code> project and work through these. Each one is small and builds on the last.</p>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <p class="progress-label" id="progress-label">0 / 3 complete</p>
+
+    <!-- Exercise 1 -->
+    <div class="exercise" id="ex1">
+      <div class="exercise-header">
+        <div class="exercise-number">1</div>
+        <div class="exercise-title">Create the root error page</div>
+      </div>
+      <p>Create <code>src/routes/+error.svelte</code>. It should display <code>$page.status</code> as a heading and <code>$page.error?.message</code> as a paragraph. Add a link back to <code>/</code>.</p>
+      <p>Test it by navigating to <code>/this-does-not-exist</code> — you should see your custom error page.</p>
+      <pre><code><span class="kw">&lt;script&gt;</span>
+  <span class="kw">import</span> { <span class="pr">page</span> } <span class="kw">from</span> <span class="str">'$app/stores'</span>;
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="kw">&lt;h1&gt;</span>{$page.status}<span class="kw">&lt;/h1&gt;</span>
+<span class="kw">&lt;p&gt;</span>{$page.error?.message}<span class="kw">&lt;/p&gt;</span>
+<span class="kw">&lt;a</span> href=<span class="str">"/"</span><span class="kw">&gt;</span>Go home<span class="kw">&lt;/a&gt;</span></code></pre>
+      <button class="exercise-done-btn" id="ex1-btn" onclick="markDone('ex1')">Mark as done</button>
+    </div>
+
+    <!-- Exercise 2 -->
+    <div class="exercise" id="ex2">
+      <div class="exercise-header">
+        <div class="exercise-number">2</div>
+        <div class="exercise-title">Add a scoped error page for protected routes</div>
+      </div>
+      <p>Create <code>src/routes/(protected)/+error.svelte</code>. Give it a slightly different message — something like "Dashboard error: {$page.error?.message}" — so you can tell the two error pages apart when testing.</p>
+      <p>Test it: add a temporary <code>error(500, 'Test dashboard error')</code> to your <code>(protected)/+layout.server.ts</code>, visit <code>/dashboard</code>, confirm the <em>protected</em> error page renders (not the root one), then remove the test throw.</p>
+      <button class="exercise-done-btn" id="ex2-btn" onclick="markDone('ex2')">Mark as done</button>
+    </div>
+
+    <!-- Exercise 3 -->
+    <div class="exercise" id="ex3">
+      <div class="exercise-header">
+        <div class="exercise-number">3</div>
+        <div class="exercise-title">Add <code>handleError</code> to your hooks</div>
+      </div>
+      <p>Export a <code>handleError</code> function from <code>src/hooks.server.ts</code>. Log the error path and error object with <code>console.error</code>. Return a friendly message.</p>
+      <p>Test it: add a <code>throw new Error('Simulated crash')</code> to your dashboard load (not inside an <code>if</code>), visit <code>/dashboard</code>, check your terminal — you should see your log output. The browser should show your friendly message. Then remove the test throw.</p>
+      <pre><code><span class="kw">export const</span> <span class="fn">handleError</span>: <span class="ty">HandleServerError</span> = ({ <span class="pr">error</span>, <span class="pr">event</span> }) => {
+  console.<span class="fn">error</span>(<span class="str">'[handleError]'</span>, <span class="pr">event</span>.<span class="pr">url</span>.<span class="pr">pathname</span>, <span class="pr">error</span>);
+  <span class="kw">return</span> { <span class="pr">message</span>: <span class="str">'Something went wrong. Please try again.'</span> };
+};</code></pre>
+      <button class="exercise-done-btn" id="ex3-btn" onclick="markDone('ex3')">Mark as done</button>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Reference ── -->
+  <section>
+    <h2>Where to dig deeper</h2>
+    <ul>
+      <li>
+        <a href="https://kit.svelte.dev/docs/errors" target="_blank">SvelteKit Docs — Errors</a>
+        — official reference for expected vs unexpected, <code>error()</code>, <code>handleError</code>
+      </li>
+      <li>
+        <a href="https://kit.svelte.dev/docs/hooks#shared-hooks-handleerror" target="_blank">SvelteKit Docs — <code>handleError</code></a>
+        — hook signature, <code>App.Error</code> interface, client-side counterpart
+      </li>
+      <li>
+        <a href="https://kit.svelte.dev/docs/routing#error" target="_blank">SvelteKit Docs — Routing: <code>+error</code></a>
+        — scoping and cascading rules
+      </li>
+    </ul>
+  </section>
+
+  <!-- ── Ask your teacher ── -->
+  <div class="ask-teacher">
+    <h3>Ask your teacher</h3>
+    <p>
+      Not sure about something in this lesson? Ask in this conversation. Good questions to explore:
+    </p>
+    <ul>
+      <li>When would I use <code>error()</code> vs just returning <code>null</code> from a load function?</li>
+      <li>Can I add extra fields to <code>$page.error</code> beyond <code>message</code>?</li>
+      <li>Is there a client-side equivalent of <code>handleError</code>?</li>
+      <li>How do I handle errors thrown inside form actions (not load functions)?</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+  const feedbackText = {
+    q1: {
+      correct: 'Correct — <code>fail()</code> returns a 4xx response but keeps the user on the form page, with data accessible as the <code>form</code> prop. <code>error()</code> would render the error page instead.',
+      wrong: '<code>fail()</code> is the right tool for form validation. <code>error()</code> navigates away to the error page. <code>throw new Error()</code> is an unexpected error and hides the message from the user.'
+    },
+    q2: {
+      correct: 'Correct — unexpected errors (anything that isn\'t thrown with <code>error()</code>) have their message hidden by SvelteKit. <code>handleError</code> intercepts them so you can log the real error; the returned object becomes <code>$page.error</code>.',
+      wrong: 'SvelteKit hides unexpected error messages from the browser to prevent leaking sensitive info (stack traces, DB errors). The user sees whatever your <code>handleError</code> returns — defaulting to "Internal Error".'
+    },
+    q3: {
+      correct: 'Correct — SvelteKit finds the nearest <code>+error.svelte</code> to where the error occurred. Since the dashboard is inside <code>(protected)</code>, the <code>(protected)/+error.svelte</code> catches it first — and it renders inside the protected layout shell.',
+      wrong: 'SvelteKit uses the nearest ancestor <code>+error.svelte</code> — the same direction-of-travel as normal layout nesting. The root error page is only used when no closer error page exists.'
+    }
+  };
+
+  function answer(qId, btn, isCorrect) {
+    const block = document.getElementById(qId);
+    const buttons = block.querySelectorAll('.option');
+    buttons.forEach(b => b.classList.add('disabled'));
+    btn.classList.add(isCorrect ? 'correct' : 'wrong');
+    if (!isCorrect) {
+      buttons.forEach(b => {
+        const handler = b.getAttribute('onclick');
+        if (handler && handler.includes('true')) b.classList.add('correct');
+      });
+    }
+    const fb = document.getElementById(qId + '-feedback');
+    fb.innerHTML = isCorrect ? feedbackText[qId].correct : feedbackText[qId].wrong;
+    fb.className = 'feedback show ' + (isCorrect ? 'correct' : 'wrong');
+  }
+
+  let doneCount = 0;
+  function markDone(exId) {
+    const btn = document.getElementById(exId + '-btn');
+    if (btn.classList.contains('done')) return;
+    btn.classList.add('done');
+    btn.textContent = 'Done!';
+    doneCount++;
+    const pct = (doneCount / 3) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-label').textContent = doneCount + ' / 3 complete';
+  }
+</script>
+
+</body>
+</html>

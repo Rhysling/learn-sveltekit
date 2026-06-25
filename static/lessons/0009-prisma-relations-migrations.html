@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 9: Prisma Relations &amp; Migrations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --orange: #ea580c;
+      --orange-light: #fff7ed;
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --code-bg: #1e1e3f;
+      --code-text: #a8b2d8;
+      --code-keyword: #c792ea;
+      --code-string: #c3e88d;
+      --code-fn: #82aaff;
+      --code-comment: #637777;
+      --code-type: #ffcb6b;
+      --code-op: #89ddff;
+      --code-prop: #f8c555;
+      --code-rune: #ff9cac;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+
+    /* Header */
+    .lesson-header { border-bottom: 2px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-tag { display: inline-block; background: var(--accent-light); color: var(--accent); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.25rem 0.75rem; border-radius: 999px; margin-bottom: 0.75rem; }
+    h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+    .lesson-subtitle { color: var(--muted); font-size: 1.05rem; }
+    .lesson-meta { display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.85rem; color: var(--muted); }
+
+    /* Typography */
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.5rem 0 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+    h2:first-of-type { border-top: none; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--accent); }
+    p { margin-bottom: 1rem; }
+    a { color: var(--accent); text-decoration: underline; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* Callouts */
+    .callout { border-left: 3px solid; padding: 0.85rem 1rem; border-radius: 0 6px 6px 0; margin: 1.25rem 0; font-size: 0.95rem; }
+    .callout-title { font-weight: 600; margin-bottom: 0.25rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .callout.vue   { background: var(--green-light);  border-color: var(--green);  }
+    .callout.vue   .callout-title { color: var(--green); }
+    .callout.note  { background: var(--accent-light); border-color: var(--accent); }
+    .callout.note  .callout-title { color: var(--accent); }
+    .callout.warn  { background: var(--yellow-light); border-color: var(--yellow); }
+    .callout.warn  .callout-title { color: var(--yellow); }
+    .callout.danger{ background: var(--red-light);    border-color: var(--red);    }
+    .callout.danger .callout-title { color: var(--red); }
+    .callout.teacher { background: var(--orange-light); border-color: var(--orange); }
+    .callout.teacher .callout-title { color: var(--orange); }
+
+    /* Code */
+    pre { background: var(--code-bg); color: var(--code-text); border-radius: 8px; padding: 1.25rem 1.5rem; overflow-x: auto; margin: 1rem 0 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; line-height: 1.65; }
+    .code-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.3rem; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: #e9eaf0; padding: 0.15em 0.4em; border-radius: 3px; }
+    pre code { background: none; padding: 0; font-size: inherit; }
+
+    .kw   { color: var(--code-keyword); }
+    .fn   { color: var(--code-fn); }
+    .str  { color: var(--code-string); }
+    .cm   { color: var(--code-comment); font-style: italic; }
+    .ty   { color: var(--code-type); }
+    .op   { color: var(--code-op); }
+    .pr   { color: var(--code-prop); }
+    .rune { color: var(--code-rune); font-weight: 500; }
+
+    /* Comparison */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0 1.5rem; }
+    .compare-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
+    .compare pre { margin: 0; font-size: 0.78rem; }
+
+    /* Quiz */
+    .quiz-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; margin: 2.5rem 0; }
+    .quiz-section h2 { border-top: none; margin-top: 0; padding-top: 0; }
+    .question { margin-bottom: 1.75rem; }
+    .question-text { font-weight: 600; margin-bottom: 0.75rem; line-height: 1.5; }
+    .question-num { display: inline-block; background: var(--accent); color: white; font-size: 0.75rem; font-weight: 700; width: 1.5rem; height: 1.5rem; line-height: 1.5rem; text-align: center; border-radius: 50%; margin-right: 0.5rem; }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; font-size: 0.95rem; }
+    .option:hover { border-color: var(--accent); background: var(--accent-light); }
+    .option.correct { background: var(--green-light); border-color: var(--green); color: var(--green); font-weight: 500; }
+    .option.wrong   { background: var(--red-light);   border-color: var(--red);   color: var(--red); }
+    .option.disabled { pointer-events: none; opacity: 0.55; }
+    .option.correct.disabled { opacity: 1; }
+    .option-letter { font-weight: 700; font-size: 0.8rem; min-width: 1.2rem; color: var(--muted); }
+    .option.correct .option-letter { color: var(--green); }
+    .option.wrong   .option-letter { color: var(--red); }
+    .feedback { font-size: 0.875rem; margin-top: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 6px; display: none; }
+    .feedback.correct { background: var(--green-light); color: var(--green); }
+    .feedback.wrong   { background: var(--red-light);   color: var(--red); }
+    .feedback.show    { display: block; }
+    .quiz-score { margin-top: 1.5rem; padding: 1rem 1.25rem; background: var(--accent-light); border-radius: 8px; font-weight: 600; display: none; }
+    .quiz-score.show { display: block; }
+    .score-btn { display: inline-block; margin-top: 1rem; padding: 0.6rem 1.4rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .score-btn:hover { opacity: 0.88; }
+
+    /* Exercises */
+    .exercises { margin-top: 2.5rem; }
+    .exercise { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; }
+    .exercise-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .exercise-num { background: var(--accent); color: white; font-size: 0.8rem; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 999px; white-space: nowrap; }
+    .exercise-title { font-weight: 700; font-size: 1rem; }
+    .exercise-check { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .exercise-check input[type="checkbox"] { margin-top: 0.2rem; accent-color: var(--accent); width: 1rem; height: 1rem; flex-shrink: 0; cursor: pointer; }
+    .exercise-check label { cursor: pointer; line-height: 1.5; }
+    .verify-box { background: var(--green-light); border-left: 3px solid var(--green); border-radius: 0 6px 6px 0; padding: 0.6rem 0.85rem; font-size: 0.875rem; margin-top: 0.75rem; color: #065f46; }
+    .verify-box strong { color: var(--green); }
+
+    /* Summary */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+    .summary-card h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.5rem; }
+    .summary-card ul { padding-left: 1.1rem; font-size: 0.9rem; }
+    .summary-card li { margin-bottom: 0.25rem; }
+
+    /* Decision table */
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.9rem; }
+    th { background: var(--accent-light); color: var(--accent); text-align: left; padding: 0.6rem 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td code { font-size: 0.82em; }
+
+    /* Diagram */
+    .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 1.25rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre; overflow-x: auto; }
+    .diagram .label { color: var(--accent); font-weight: 600; }
+    .diagram .ctx { color: var(--purple); font-weight: 500; }
+    .diagram .mod { color: var(--orange); font-weight: 500; }
+
+    /* Step boxes */
+    .step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.5rem; margin: 1.25rem 0; }
+    .step-num { display: inline-block; background: var(--accent); color: white; font-size: 0.75rem; font-weight: 700; width: 1.5rem; height: 1.5rem; line-height: 1.5rem; text-align: center; border-radius: 50%; margin-right: 0.5rem; }
+
+    @media (max-width: 620px) {
+      .compare, .summary-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <div class="lesson-tag">Lesson 9 &middot; SvelteKit</div>
+    <h1>Prisma Relations &amp; Migrations</h1>
+    <p class="lesson-subtitle">Connect your models with relations, evolve your schema through migrations, seed your database, and write queries that join data across tables.</p>
+    <div class="lesson-meta">
+      <span>&#9201; ~35 min</span>
+      <span>&#128203; Quiz + 3 exercises</span>
+      <span>&#127919; Tied to: full-stack data modeling, notes + auth integration</span>
+    </div>
+  </header>
+
+
+  <!-- ============================================ -->
+  <!-- Where you are                                -->
+  <!-- ============================================ -->
+  <h2>Where You Are</h2>
+
+  <p>Your project already has Prisma + SQLite working. You have a <code>User</code> model, a <code>Note</code> model, and CRUD operations that talk to the database through server load functions and form actions. But right now, your two models are <strong>isolated</strong> &mdash; there's no way to know which user created which note.</p>
+
+  <div class="diagram"><span class="label">Current schema</span>
+
+  <span class="mod">User</span>                        <span class="mod">Note</span>
+  &boxvr;&boxh; id (cuid)                  &boxvr;&boxh; id (autoincrement)
+  &boxvr;&boxh; email                      &boxvr;&boxh; body
+  &boxvr;&boxh; password                   &boxur;&boxh; createdAt
+  &boxvr;&boxh; name
+  &boxur;&boxh; ...
+
+  <span class="ctx">No connection between them.</span></div>
+
+  <p>This lesson teaches you to connect them with a <strong>relation</strong>, migrate the database, seed it with test data, and write queries that pull related data in a single call.</p>
+
+  <div class="callout vue">
+    <div class="callout-title">Vs Nuxt</div>
+    If you've used Prisma in a Nuxt project, the Prisma side is identical &mdash; the schema file, migration commands, and query API don't change. What's different is <em>where</em> you call Prisma: in SvelteKit, it's <code>+page.server.ts</code> load functions and form actions, not Nuxt's <code>server/api/</code> routes.
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- PART 1: Relations                            -->
+  <!-- ============================================ -->
+  <h2>Relations in Prisma</h2>
+
+  <p>A <strong>relation</strong> connects two models so you can query across them. Prisma supports three kinds:</p>
+
+  <table>
+    <thead>
+      <tr><th>Relation</th><th>Example</th><th>Schema syntax</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>One-to-many</strong></td>
+        <td>A User has many Notes</td>
+        <td>Foreign key on the "many" side</td>
+      </tr>
+      <tr>
+        <td><strong>One-to-one</strong></td>
+        <td>A User has one Profile</td>
+        <td>Foreign key + <code>@unique</code> on one side</td>
+      </tr>
+      <tr>
+        <td><strong>Many-to-many</strong></td>
+        <td>Posts have many Tags, Tags have many Posts</td>
+        <td>Implicit join table (Prisma creates it for you)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The most common &mdash; and the one you need right now &mdash; is <strong>one-to-many</strong>. Let's add it.</p>
+
+  <p><a href="https://www.prisma.io/docs/orm/prisma-schema/data-model/relations" target="_blank">Prisma Relations docs &rarr;</a></p>
+
+  <h3>Adding a one-to-many relation</h3>
+
+  <p>To connect Note to User, you need two things in <code>schema.prisma</code>:</p>
+  <ol>
+    <li>A <strong>foreign key field</strong> on Note (<code>authorId</code>) that stores the User's id</li>
+    <li><strong>Relation fields</strong> on both sides that tell Prisma how to join them</li>
+  </ol>
+
+  <div class="code-label">prisma/schema.prisma</div>
+  <pre><code><span class="kw">model</span> <span class="ty">User</span> {
+  <span class="pr">id</span>          <span class="ty">String</span>   <span class="fn">@id</span> <span class="fn">@default</span>(<span class="fn">cuid</span>())
+  <span class="pr">email</span>       <span class="ty">String</span>   <span class="fn">@unique</span>
+  <span class="pr">password</span>    <span class="ty">String</span>
+  <span class="pr">name</span>        <span class="ty">String?</span>
+  <span class="pr">createdAt</span>   <span class="ty">DateTime</span> <span class="fn">@default</span>(<span class="fn">now</span>())
+  <span class="pr">lastLoginAt</span> <span class="ty">DateTime</span> <span class="fn">@default</span>(<span class="fn">now</span>())
+  <span class="pr">isAdmin</span>     <span class="ty">Boolean</span>  <span class="fn">@default</span>(<span class="kw">false</span>)
+  <span class="pr">isDisabled</span>  <span class="ty">Boolean</span>  <span class="fn">@default</span>(<span class="kw">false</span>)
+  <span class="pr">notes</span>       <span class="ty">Note</span>[]              <span class="cm">// &larr; relation field (no column in DB)</span>
+}
+
+<span class="kw">model</span> <span class="ty">Note</span> {
+  <span class="pr">id</span>        <span class="ty">Int</span>      <span class="fn">@id</span> <span class="fn">@default</span>(<span class="fn">autoincrement</span>())
+  <span class="pr">body</span>      <span class="ty">String</span>
+  <span class="pr">createdAt</span> <span class="ty">DateTime</span> <span class="fn">@default</span>(<span class="fn">now</span>())
+  <span class="pr">author</span>    <span class="ty">User</span>     <span class="fn">@relation</span>(<span class="pr">fields</span>: [<span class="pr">authorId</span>], <span class="pr">references</span>: [<span class="pr">id</span>])  <span class="cm">// &larr; relation field</span>
+  <span class="pr">authorId</span>  <span class="ty">String</span>                                                  <span class="cm">// &larr; foreign key (real column)</span>
+}</code></pre>
+
+  <p>There are two kinds of fields at work here:</p>
+
+  <table>
+    <thead>
+      <tr><th>Field</th><th>In DB?</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>authorId String</code></td>
+        <td>Yes &mdash; real column</td>
+        <td>Stores the User's <code>id</code>. This is the <strong>foreign key</strong>.</td>
+      </tr>
+      <tr>
+        <td><code>author User @relation(...)</code></td>
+        <td>No &mdash; virtual</td>
+        <td>Tells Prisma how to join. Used by <code>include</code> in queries.</td>
+      </tr>
+      <tr>
+        <td><code>notes Note[]</code></td>
+        <td>No &mdash; virtual</td>
+        <td>The "back-relation" on User. Lets you query <code>user.notes</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout note">
+    <div class="callout-title">The @relation directive</div>
+    <code>@relation(fields: [authorId], references: [id])</code> means: "join Note.authorId to User.id." This is required on the side that holds the foreign key. The other side (User.notes) doesn't need it &mdash; Prisma infers the reverse.
+  </div>
+
+  <h3>Optional vs required relations</h3>
+
+  <p>The schema above makes <code>authorId</code> required &mdash; every note <em>must</em> have an author. If you have existing notes without authors, the migration will fail because those rows can't satisfy the constraint.</p>
+
+  <p>You have two choices:</p>
+
+  <table>
+    <thead>
+      <tr><th>Approach</th><th>Schema</th><th>When to use</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Optional relation</strong></td>
+        <td><code>author User? @relation(...)</code><br><code>authorId String?</code></td>
+        <td>You have existing data that lacks the foreign key. Old rows keep <code>null</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>Required relation</strong></td>
+        <td><code>author User @relation(...)</code><br><code>authorId String</code></td>
+        <td>Clean start, or you'll backfill/wipe existing data before migrating.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>For this lesson, we'll use an <strong>optional</strong> relation since your database already has notes. You can tighten it to required later once all notes have authors.</p>
+
+
+  <!-- ============================================ -->
+  <!-- PART 2: Migrations                           -->
+  <!-- ============================================ -->
+  <h2>The Migration Workflow</h2>
+
+  <p>Right now your project has a single <code>0_baseline</code> migration. That was the initial <code>CREATE TABLE</code>. Every schema change after that follows the same three-step cycle:</p>
+
+  <div class="diagram"><span class="label">Schema change cycle</span>
+
+  <span class="ctx">1. Edit schema.prisma</span>   &rarr;   <span class="ctx">2. prisma migrate dev</span>   &rarr;   <span class="ctx">3. prisma generate</span>
+       (your change)              (creates SQL + runs it)         (updates TypeScript types)</div>
+
+  <h3>Step by step</h3>
+
+  <div class="step">
+    <p><span class="step-num">1</span> <strong>Edit the schema.</strong> Add the relation fields to <code>schema.prisma</code> as shown above.</p>
+  </div>
+
+  <div class="step">
+    <p><span class="step-num">2</span> <strong>Create and run the migration.</strong></p>
+    <pre><code><span class="fn">npx</span> prisma migrate dev <span class="op">--</span>name add-note-author</code></pre>
+    <p>This command does three things:</p>
+    <ol>
+      <li>Diffs your schema against the database and generates a SQL migration file</li>
+      <li>Runs the SQL against your dev database</li>
+      <li>Regenerates the Prisma client (so you get updated TypeScript types)</li>
+    </ol>
+    <p>The migration file lands in <code>prisma/migrations/&lt;timestamp&gt;_add_note_author/migration.sql</code>. It's committed to git &mdash; other developers (or your production deploy) run <code>prisma migrate deploy</code> to apply it.</p>
+  </div>
+
+  <div class="step">
+    <p><span class="step-num">3</span> <strong>Verify.</strong> Check the generated SQL file to make sure it did what you expected:</p>
+    <pre><code><span class="cm">-- Expected: adds a nullable column, not a destructive change</span>
+<span class="kw">ALTER TABLE</span> <span class="str">"Note"</span> <span class="kw">ADD COLUMN</span> <span class="str">"authorId"</span> <span class="ty">TEXT</span>;
+
+<span class="cm">-- Adds a foreign key constraint</span>
+<span class="cm">-- (SQLite handles this via PRAGMA foreign_keys)</span></code></pre>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">SQLite migration quirk</div>
+    SQLite doesn't support <code>ALTER TABLE ... ADD CONSTRAINT</code>. When Prisma needs to add a foreign key to an existing table in SQLite, it may <strong>recreate the table</strong> &mdash; create a new table with the constraint, copy data, drop the old one, rename. This is safe but can be surprising when you read the migration SQL. PostgreSQL/MySQL don't have this limitation.
+    <br><br>
+    <a href="https://www.prisma.io/docs/orm/prisma-migrate/understanding-prisma-migrate" target="_blank">Prisma Migrate docs &rarr;</a>
+  </div>
+
+  <h3>What if you mess up?</h3>
+
+  <p>In development, you have escape hatches:</p>
+
+  <table>
+    <thead>
+      <tr><th>Situation</th><th>Command</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Want to start over completely</td>
+        <td><code>npx prisma migrate reset</code> &mdash; drops the database, re-runs all migrations, then seeds</td>
+      </tr>
+      <tr>
+        <td>Schema is out of sync, no data to save</td>
+        <td><code>npx prisma db push</code> &mdash; pushes schema directly without creating a migration file (prototyping only)</td>
+      </tr>
+      <tr>
+        <td>Need to see what SQL <em>would</em> be generated</td>
+        <td><code>npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout danger">
+    <div class="callout-title">Never use db push in production</div>
+    <code>prisma db push</code> skips migration history. It's fine for prototyping, but production must use <code>prisma migrate deploy</code> so changes are tracked, reviewable, and reproducible.
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- PART 3: Seeding                              -->
+  <!-- ============================================ -->
+  <h2>Seeding the Database</h2>
+
+  <p>Your <code>prisma.config.ts</code> already references a seed script (<code>tsx prisma/seed.ts</code>), but the file doesn't exist yet. A seed script populates your dev database with realistic test data so you're not starting from an empty slate after every <code>migrate reset</code>.</p>
+
+  <div class="code-label">prisma/seed.ts</div>
+  <pre><code><span class="kw">import</span> { <span class="ty">PrismaClient</span> } <span class="kw">from</span> <span class="str">'../src/generated/prisma/client'</span>;
+<span class="kw">import</span> { <span class="ty">PrismaBetterSqlite3</span> } <span class="kw">from</span> <span class="str">'@prisma/adapter-better-sqlite3'</span>;
+<span class="kw">import</span> { <span class="fn">hashSync</span> } <span class="kw">from</span> <span class="str">'bcryptjs'</span>;
+
+<span class="kw">const</span> <span class="pr">adapter</span> <span class="op">=</span> <span class="kw">new</span> <span class="ty">PrismaBetterSqlite3</span>({
+  <span class="pr">url</span>: <span class="pr">process</span>.<span class="pr">env</span>.<span class="pr">DATABASE_URL</span> <span class="op">??</span> <span class="str">'file:./dev.db'</span>,
+});
+<span class="kw">const</span> <span class="pr">prisma</span> <span class="op">=</span> <span class="kw">new</span> <span class="ty">PrismaClient</span>({ <span class="pr">adapter</span> });
+
+<span class="kw">async function</span> <span class="fn">main</span>() {
+  <span class="cm">// Create users</span>
+  <span class="kw">const</span> <span class="pr">alice</span> <span class="op">=</span> <span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">user</span>.<span class="fn">upsert</span>({
+    <span class="pr">where</span>: { <span class="pr">email</span>: <span class="str">'alice@example.com'</span> },
+    <span class="pr">update</span>: {},
+    <span class="pr">create</span>: {
+      <span class="pr">email</span>: <span class="str">'alice@example.com'</span>,
+      <span class="pr">name</span>: <span class="str">'Alice'</span>,
+      <span class="pr">password</span>: <span class="fn">hashSync</span>(<span class="str">'password123'</span>, <span class="op">10</span>),
+      <span class="pr">isAdmin</span>: <span class="kw">true</span>,
+    },
+  });
+
+  <span class="kw">const</span> <span class="pr">bob</span> <span class="op">=</span> <span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">user</span>.<span class="fn">upsert</span>({
+    <span class="pr">where</span>: { <span class="pr">email</span>: <span class="str">'bob@example.com'</span> },
+    <span class="pr">update</span>: {},
+    <span class="pr">create</span>: {
+      <span class="pr">email</span>: <span class="str">'bob@example.com'</span>,
+      <span class="pr">name</span>: <span class="str">'Bob'</span>,
+      <span class="pr">password</span>: <span class="fn">hashSync</span>(<span class="str">'password123'</span>, <span class="op">10</span>),
+    },
+  });
+
+  <span class="cm">// Create notes with authors</span>
+  <span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">note</span>.<span class="fn">createMany</span>({
+    <span class="pr">data</span>: [
+      { <span class="pr">body</span>: <span class="str">'First note from Alice'</span>, <span class="pr">authorId</span>: <span class="pr">alice</span>.<span class="pr">id</span> },
+      { <span class="pr">body</span>: <span class="str">'Second note from Alice'</span>, <span class="pr">authorId</span>: <span class="pr">alice</span>.<span class="pr">id</span> },
+      { <span class="pr">body</span>: <span class="str">'Bob\'s first note'</span>, <span class="pr">authorId</span>: <span class="pr">bob</span>.<span class="pr">id</span> },
+    ],
+  });
+
+  <span class="pr">console</span>.<span class="fn">log</span>(<span class="str">'Seeded: 2 users, 3 notes'</span>);
+}
+
+<span class="fn">main</span>()
+  .<span class="fn">catch</span>((<span class="pr">e</span>) <span class="op">=&gt;</span> { <span class="pr">console</span>.<span class="fn">error</span>(<span class="pr">e</span>); <span class="pr">process</span>.<span class="fn">exit</span>(<span class="op">1</span>); })
+  .<span class="fn">finally</span>(() <span class="op">=&gt;</span> <span class="pr">prisma</span>.<span class="fn">$disconnect</span>());</code></pre>
+
+  <div class="callout note">
+    <div class="callout-title">Why upsert?</div>
+    <code>upsert</code> means "create if it doesn't exist, otherwise update." This makes the seed script <strong>idempotent</strong> &mdash; you can run it multiple times without creating duplicate users. The notes use <code>createMany</code>, which will add duplicates on re-run; if that bothers you, delete all notes first with <code>prisma.note.deleteMany()</code>.
+  </div>
+
+  <p>The seed runs automatically after <code>prisma migrate reset</code>, or manually with:</p>
+  <pre><code><span class="fn">npx</span> prisma db seed</code></pre>
+
+  <p><a href="https://www.prisma.io/docs/orm/prisma-migrate/workflows/seeding" target="_blank">Prisma seeding docs &rarr;</a></p>
+
+
+  <!-- ============================================ -->
+  <!-- PART 4: Querying Relations                   -->
+  <!-- ============================================ -->
+  <h2>Querying Related Data</h2>
+
+  <p>With the relation in place, Prisma gives you two ways to pull related data: <code>include</code> and <code>select</code>.</p>
+
+  <h3>include &mdash; load the whole related object</h3>
+
+  <div class="code-label">+page.server.ts</div>
+  <pre><code><span class="kw">const</span> <span class="pr">notes</span> <span class="op">=</span> <span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">note</span>.<span class="fn">findMany</span>({
+  <span class="pr">include</span>: { <span class="pr">author</span>: <span class="kw">true</span> },     <span class="cm">// &larr; joins User table</span>
+  <span class="pr">orderBy</span>: { <span class="pr">createdAt</span>: <span class="str">'desc'</span> },
+});
+
+<span class="cm">// Each note now has note.author.name, note.author.email, etc.</span></code></pre>
+
+  <p><code>include: { author: true }</code> tells Prisma to join the User table and attach the full user object to each note. The generated SQL is a <code>LEFT JOIN</code> (or a second query, depending on the adapter).</p>
+
+  <h3>select &mdash; pick specific fields</h3>
+
+  <p>If you don't need the whole User object, <code>select</code> lets you cherry-pick fields. This is more efficient and avoids leaking sensitive data (like <code>password</code>):</p>
+
+  <pre><code><span class="kw">const</span> <span class="pr">notes</span> <span class="op">=</span> <span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">note</span>.<span class="fn">findMany</span>({
+  <span class="pr">select</span>: {
+    <span class="pr">id</span>: <span class="kw">true</span>,
+    <span class="pr">body</span>: <span class="kw">true</span>,
+    <span class="pr">createdAt</span>: <span class="kw">true</span>,
+    <span class="pr">author</span>: {
+      <span class="pr">select</span>: { <span class="pr">name</span>: <span class="kw">true</span>, <span class="pr">email</span>: <span class="kw">true</span> },  <span class="cm">// &larr; only name and email</span>
+    },
+  },
+  <span class="pr">orderBy</span>: { <span class="pr">createdAt</span>: <span class="str">'desc'</span> },
+});</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-title">include vs select: you can't use both at the top level</div>
+    Prisma doesn't allow <code>include</code> and <code>select</code> on the same query level. If you use <code>select</code>, you must explicitly list every field you want &mdash; nothing is included by default. If you use <code>include</code>, you get all scalar fields plus the included relations.
+  </div>
+
+  <h3>The reverse direction: querying a user's notes</h3>
+
+  <pre><code><span class="kw">const</span> <span class="pr">userWithNotes</span> <span class="op">=</span> <span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">user</span>.<span class="fn">findUnique</span>({
+  <span class="pr">where</span>: { <span class="pr">id</span>: <span class="pr">userId</span> },
+  <span class="pr">include</span>: { <span class="pr">notes</span>: <span class="kw">true</span> },  <span class="cm">// &larr; loads all notes by this user</span>
+});
+
+<span class="cm">// userWithNotes.notes is Note[]</span></code></pre>
+
+  <p>This works because of the <code>notes Note[]</code> back-relation field on User. Prisma handles the join in both directions.</p>
+
+  <h3>Nested writes: creating a note with its author in one call</h3>
+
+  <p>Instead of manually setting <code>authorId</code>, you can use Prisma's <strong>nested write</strong> syntax to connect related records:</p>
+
+  <div class="compare">
+    <div>
+      <div class="compare-label" style="color:var(--purple)">Manual (set the FK)</div>
+      <pre><code><span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">note</span>.<span class="fn">create</span>({
+  <span class="pr">data</span>: {
+    <span class="pr">body</span>: <span class="str">'Hello'</span>,
+    <span class="pr">authorId</span>: <span class="pr">userId</span>,
+  },
+});</code></pre>
+    </div>
+    <div>
+      <div class="compare-label" style="color:var(--purple)">Nested write (connect)</div>
+      <pre><code><span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">note</span>.<span class="fn">create</span>({
+  <span class="pr">data</span>: {
+    <span class="pr">body</span>: <span class="str">'Hello'</span>,
+    <span class="pr">author</span>: {
+      <span class="pr">connect</span>: { <span class="pr">id</span>: <span class="pr">userId</span> },
+    },
+  },
+});</code></pre>
+    </div>
+  </div>
+
+  <p>Both do the same thing. The manual version is simpler for one-to-many. <code>connect</code> shines when creating deeply nested structures, or when you want to <code>create</code> a related record at the same time:</p>
+
+  <pre><code><span class="cm">// Create a user AND their first note in a single transaction</span>
+<span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">user</span>.<span class="fn">create</span>({
+  <span class="pr">data</span>: {
+    <span class="pr">email</span>: <span class="str">'carol@example.com'</span>,
+    <span class="pr">password</span>: <span class="pr">hashedPw</span>,
+    <span class="pr">name</span>: <span class="str">'Carol'</span>,
+    <span class="pr">notes</span>: {
+      <span class="pr">create</span>: [
+        { <span class="pr">body</span>: <span class="str">'Carol\'s first note'</span> },
+        { <span class="pr">body</span>: <span class="str">'Carol\'s second note'</span> },
+      ],
+    },
+  },
+});</code></pre>
+
+  <p><a href="https://www.prisma.io/docs/orm/prisma-client/queries/relation-queries" target="_blank">Prisma relation queries docs &rarr;</a></p>
+
+
+  <!-- ============================================ -->
+  <!-- PART 5: The dev singleton                    -->
+  <!-- ============================================ -->
+  <h2>Why Your <code>db.ts</code> Uses a Global Singleton</h2>
+
+  <p>You already have this pattern in <code>src/lib/server/db.ts</code>:</p>
+
+  <pre><code><span class="kw">const</span> <span class="pr">prisma</span> <span class="op">=</span> <span class="pr">global</span>.<span class="pr">prisma</span> <span class="op">??</span> <span class="kw">new</span> <span class="ty">PrismaClient</span>({ <span class="pr">adapter</span> });
+<span class="kw">if</span> (<span class="pr">process</span>.<span class="pr">env</span>.<span class="pr">NODE_ENV</span> <span class="op">!==</span> <span class="str">'production'</span>) <span class="pr">global</span>.<span class="pr">prisma</span> <span class="op">=</span> <span class="pr">prisma</span>;</code></pre>
+
+  <p>This exists because of <strong>Vite's HMR (hot module replacement)</strong>. During development, when you save a file, Vite re-imports changed modules. Without the global cache, each hot reload would create a <em>new</em> <code>PrismaClient</code> instance, eventually exhausting database connections.</p>
+
+  <p>The global singleton pattern stores the client on <code>globalThis</code>, which survives HMR. In production, there's no HMR, so you get a single client naturally.</p>
+
+  <div class="callout vue">
+    <div class="callout-title">Vs Nuxt</div>
+    Same problem, same pattern. Nuxt's HMR has the same module re-import behavior. If you've used Prisma in a Nuxt <code>server/utils/db.ts</code>, you've likely seen the same <code>globalThis.prisma</code> trick.
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- PART 6: SvelteKit integration patterns       -->
+  <!-- ============================================ -->
+  <h2>SvelteKit Integration Patterns</h2>
+
+  <p>Here's how relations fit into the SvelteKit patterns you already know:</p>
+
+  <h3>Load function &rarr; include related data</h3>
+
+  <div class="code-label">src/routes/examples/notes/+page.server.ts</div>
+  <pre><code><span class="kw">export const</span> <span class="pr">load</span>: <span class="ty">PageServerLoad</span> <span class="op">=</span> <span class="kw">async</span> ({ <span class="pr">locals</span> }) <span class="op">=&gt;</span> {
+  <span class="kw">return</span> {
+    <span class="pr">notes</span>: <span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">note</span>.<span class="fn">findMany</span>({
+      <span class="pr">include</span>: { <span class="pr">author</span>: { <span class="pr">select</span>: { <span class="pr">name</span>: <span class="kw">true</span> } } },  <span class="cm">// safe: no password leak</span>
+      <span class="pr">orderBy</span>: { <span class="pr">createdAt</span>: <span class="str">'desc'</span> },
+    }),
+  };
+};</code></pre>
+
+  <div class="callout danger">
+    <div class="callout-title">Never include password in load returns</div>
+    SvelteKit serializes load function return values and sends them to the client. If you <code>include: { author: true }</code>, the full User object &mdash; <strong>including the hashed password</strong> &mdash; ends up in the HTML payload. Always use <code>select</code> inside <code>include</code> to pick only safe fields.
+  </div>
+
+  <h3>Form action &rarr; create with relation</h3>
+
+  <div class="code-label">Form action: add a note for the logged-in user</div>
+  <pre><code><span class="pr">add</span>: <span class="kw">async</span> ({ <span class="pr">request</span>, <span class="pr">locals</span> }) <span class="op">=&gt;</span> {
+  <span class="kw">if</span> (!<span class="pr">locals</span>.<span class="pr">user</span>) <span class="kw">return</span> <span class="fn">fail</span>(<span class="op">401</span>, { <span class="pr">error</span>: <span class="str">'Not logged in'</span> });
+
+  <span class="kw">const</span> <span class="pr">data</span> <span class="op">=</span> <span class="kw">await</span> <span class="pr">request</span>.<span class="fn">formData</span>();
+  <span class="kw">const</span> <span class="pr">body</span> <span class="op">=</span> <span class="ty">String</span>(<span class="pr">data</span>.<span class="fn">get</span>(<span class="str">'body'</span>) <span class="op">??</span> <span class="str">''</span>).<span class="fn">trim</span>();
+
+  <span class="kw">if</span> (!<span class="pr">body</span>) <span class="kw">return</span> <span class="fn">fail</span>(<span class="op">400</span>, { <span class="pr">error</span>: <span class="str">'Note body is required.'</span> });
+
+  <span class="kw">await</span> <span class="pr">prisma</span>.<span class="pr">note</span>.<span class="fn">create</span>({
+    <span class="pr">data</span>: { <span class="pr">body</span>, <span class="pr">authorId</span>: <span class="pr">locals</span>.<span class="pr">user</span>.<span class="pr">userId</span> },
+  });
+},</code></pre>
+
+  <p>The <code>locals.user</code> object is set by your auth hook (<code>hooks.server.ts</code>), which runs before every request. This is the standard pattern: the hook verifies the JWT and attaches the user; the load function or action uses <code>locals.user</code> to scope queries.</p>
+
+
+  <!-- ============================================ -->
+  <!-- QUIZ                                         -->
+  <!-- ============================================ -->
+  <div class="quiz-section">
+    <h2>Quiz &mdash; Check Your Understanding</h2>
+    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Click an option to check immediately.</p>
+
+    <!-- Q1 -->
+    <div class="question" id="q1">
+      <div class="question-text"><span class="question-num">1</span> You add <code>author User @relation(fields: [authorId], references: [id])</code> to the Note model. Which field actually exists as a column in the database?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">A</span> <code>author</code> &mdash; it's a User reference column.</div>
+        <div class="option" onclick="answer(this,'q1',true)"><span class="option-letter">B</span> <code>authorId</code> &mdash; the relation field is virtual; only the foreign key is a real column.</div>
+        <div class="option" onclick="answer(this,'q1',false)"><span class="option-letter">C</span> Both &mdash; Prisma creates columns for both fields.</div>
+      </div>
+      <div class="feedback wrong" id="q1-wrong">The <code>author User @relation(...)</code> field is virtual &mdash; it tells Prisma how to join tables in queries, but no column is created for it. Only <code>authorId</code> exists in the database as a real column storing the foreign key value.</div>
+      <div class="feedback correct" id="q1-correct">Correct. Relation fields like <code>author</code> and <code>notes</code> are virtual &mdash; they exist only in the Prisma schema to describe relationships. The <code>authorId String</code> field is the real database column.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question" id="q2">
+      <div class="question-text"><span class="question-num">2</span> You run <code>prisma.note.findMany({ include: { author: true } })</code> and return the result from a server load function. What's the security risk?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">A</span> No risk &mdash; server load functions keep data server-side.</div>
+        <div class="option" onclick="answer(this,'q2',true)"><span class="option-letter">B</span> The full User object (including hashed password) gets serialized into the HTML payload sent to the client.</div>
+        <div class="option" onclick="answer(this,'q2',false)"><span class="option-letter">C</span> It causes a SQL injection vulnerability.</div>
+      </div>
+      <div class="feedback wrong" id="q2-wrong">SvelteKit serializes the return value of server load functions and embeds it in the HTML sent to the browser. <code>include: { author: true }</code> pulls the full User object &mdash; including <code>password</code>. Use <code>select</code> inside <code>include</code> to pick only safe fields.</div>
+      <div class="feedback correct" id="q2-correct">Correct. SvelteKit's server load functions serialize their return value into the client-side HTML. <code>include: { author: true }</code> brings the full User, password hash included. Always use <code>include: { author: { select: { name: true } } }</code> to pick safe fields.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question" id="q3">
+      <div class="question-text"><span class="question-num">3</span> You want to add a <code>required</code> <code>authorId</code> column to the Note table, but you have existing notes in the database. What happens when you run <code>prisma migrate dev</code>?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q3',true)"><span class="option-letter">A</span> The migration fails because existing rows have no value for the new required column.</div>
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">B</span> Prisma auto-fills existing rows with a default value.</div>
+        <div class="option" onclick="answer(this,'q3',false)"><span class="option-letter">C</span> It silently deletes existing notes without an author.</div>
+      </div>
+      <div class="feedback wrong" id="q3-wrong">A required column with no default cannot be added to a table that already has rows &mdash; those rows would violate the NOT NULL constraint. The migration will fail. Use an optional relation (<code>String?</code>) to allow nulls for existing data, or wipe the data first.</div>
+      <div class="feedback correct" id="q3-correct">Correct. Existing rows can't satisfy a NOT NULL constraint for a column they don't have. Either make the relation optional (<code>authorId String?</code>), add a <code>@default</code>, or clear existing data before migrating.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question" id="q4">
+      <div class="question-text"><span class="question-num">4</span> What does <code>upsert</code> do in a seed script?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">A</span> Deletes the record if it exists, then creates a new one.</div>
+        <div class="option" onclick="answer(this,'q4',true)"><span class="option-letter">B</span> Creates the record if it doesn't exist; if it does, applies the <code>update</code> clause (which can be empty).</div>
+        <div class="option" onclick="answer(this,'q4',false)"><span class="option-letter">C</span> Inserts multiple records at once, skipping duplicates silently.</div>
+      </div>
+      <div class="feedback wrong" id="q4-wrong"><code>upsert</code> = "update or insert." It checks the <code>where</code> condition. If a match exists, it applies the <code>update</code> clause. If no match, it runs the <code>create</code> clause. With <code>update: {}</code>, it's effectively "create if missing, otherwise leave it alone" &mdash; making the seed idempotent.</div>
+      <div class="feedback correct" id="q4-correct">Correct. <code>upsert</code> checks <code>where</code>, then either <code>update</code>s or <code>create</code>s. With <code>update: {}</code>, it's a safe "create if not exists" &mdash; perfect for seeds that can run multiple times without creating duplicates.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question" id="q5">
+      <div class="question-text"><span class="question-num">5</span> Why does <code>db.ts</code> store the Prisma client on <code>globalThis</code> in development?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">A</span> To make Prisma available in client-side code.</div>
+        <div class="option" onclick="answer(this,'q5',true)"><span class="option-letter">B</span> To prevent Vite's HMR from creating a new PrismaClient on every file save, which would exhaust database connections.</div>
+        <div class="option" onclick="answer(this,'q5',false)"><span class="option-letter">C</span> To share the Prisma instance across multiple worker threads.</div>
+      </div>
+      <div class="feedback wrong" id="q5-wrong">The global singleton exists because Vite's hot module replacement re-imports modules on every file save. Without caching on <code>globalThis</code>, each reload creates a new <code>PrismaClient</code>, and you quickly run out of database connections. In production there's no HMR, so this isn't needed.</div>
+      <div class="feedback correct" id="q5-correct">Correct. Vite's HMR re-imports modules on save. Without the global cache, each hot reload spawns a new PrismaClient. <code>globalThis</code> survives HMR, so the same client is reused across reloads.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question" id="q6">
+      <div class="question-text"><span class="question-num">6</span> Can you use <code>include</code> and <code>select</code> together at the top level of a Prisma query?</div>
+      <div class="options">
+        <div class="option" onclick="answer(this,'q6',true)"><span class="option-letter">A</span> No &mdash; they're mutually exclusive at the same level. Use <code>select</code> inside <code>include</code> (or vice versa) for nested relations.</div>
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">B</span> Yes &mdash; <code>include</code> adds relations and <code>select</code> picks scalars, so they complement each other.</div>
+        <div class="option" onclick="answer(this,'q6',false)"><span class="option-letter">C</span> Only in Prisma 7+.</div>
+      </div>
+      <div class="feedback wrong" id="q6-wrong">Prisma doesn't allow both <code>include</code> and <code>select</code> at the same query level. With <code>include</code>, you get all scalars plus specified relations. With <code>select</code>, you only get what you list. You <em>can</em> nest them: <code>include: { author: { select: { name: true } } }</code>.</div>
+      <div class="feedback correct" id="q6-correct">Correct. At any given level, it's one or the other. The pattern <code>include: { author: { select: { name: true } } }</code> is the way to include a relation but pick specific fields from it.</div>
+    </div>
+
+    <button class="score-btn" onclick="showScore()">Show my score</button>
+    <div class="quiz-score" id="quiz-score"></div>
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- EXERCISES                                    -->
+  <!-- ============================================ -->
+  <div class="exercises">
+    <h2>Hands-On Exercises</h2>
+    <p>These exercises modify your actual project. Each builds on the previous one.</p>
+
+    <!-- Exercise 1: Add the relation and migrate -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 1</span>
+        <span class="exercise-title">Add the Note &rarr; User relation and migrate</span>
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1rem;">Connect notes to users so you can track who wrote each note.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1a">
+        <label for="e1a">Edit <code>prisma/schema.prisma</code>: add <code>notes Note[]</code> to the User model.</label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1b">
+        <label for="e1b">Add <code>author User? @relation(fields: [authorId], references: [id])</code> and <code>authorId String?</code> to the Note model. Use optional (<code>?</code>) since existing notes have no author.</label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1c">
+        <label for="e1c">Run <code>npx prisma migrate dev --name add-note-author</code> and verify it succeeds.</label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e1d">
+        <label for="e1d">Open the generated migration file in <code>prisma/migrations/</code> and read the SQL. Confirm it adds an <code>authorId</code> column (nullable).</label>
+      </div>
+
+      <div class="verify-box">
+        <strong>&#10003; Verified when:</strong> <code>prisma migrate dev</code> completes without errors. The migration SQL shows the new column. <code>npx prisma studio</code> shows the Note table with an <code>authorId</code> column (null for existing notes).
+      </div>
+    </div>
+
+    <!-- Exercise 2: Create the seed script -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 2</span>
+        <span class="exercise-title">Write and run a seed script</span>
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1rem;">Create test data so you have users with notes to query against.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2a">
+        <label for="e2a">Make sure <code>tsx</code> is installed: <code>npm install -D tsx</code></label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2b">
+        <label for="e2b">Create <code>prisma/seed.ts</code> following the seed script example in this lesson. Adapt it to use your project's import paths.</label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2c">
+        <label for="e2c">Run <code>npx prisma migrate reset</code> to wipe the database, re-run migrations, and seed. Confirm the seed output shows in the terminal.</label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e2d">
+        <label for="e2d">Run <code>npx prisma studio</code> and verify: 2 users exist, 3 notes exist, each note has an <code>authorId</code> pointing to a user.</label>
+      </div>
+
+      <div class="verify-box">
+        <strong>&#10003; Verified when:</strong> Prisma Studio shows users and notes with correct relations. Running <code>npx prisma migrate reset</code> a second time produces the same result (idempotent).
+      </div>
+    </div>
+
+    <!-- Exercise 3: Update the notes page -->
+    <div class="exercise">
+      <div class="exercise-header">
+        <span class="exercise-num">Exercise 3</span>
+        <span class="exercise-title">Show authors on the notes page</span>
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1rem;">Update the notes page to display who wrote each note, and set the author when creating new notes.</p>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3a">
+        <label for="e3a">In <code>src/routes/examples/notes/+page.server.ts</code>, update the load function to include the author's name: <code>include: { author: { select: { name: true } } }</code></label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3b">
+        <label for="e3b">Update the <code>add</code> form action to set <code>authorId: locals.user.userId</code> when creating a note.</label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3c">
+        <label for="e3c">In <code>+page.svelte</code>, display the author name next to each note. Handle the case where <code>author</code> is null (notes created before the relation existed). For example: <code>{n.author?.name ?? 'Anonymous'}</code></label>
+      </div>
+
+      <div class="exercise-check">
+        <input type="checkbox" id="e3d">
+        <label for="e3d">Test: log in, create a note, and verify your name appears next to it. Old notes should show "Anonymous".</label>
+      </div>
+
+      <div class="verify-box">
+        <strong>&#10003; Verified when:</strong> The notes page shows author names. New notes are attributed to the logged-in user. Old notes without an author display gracefully. No password hashes appear in the page source (<code>View Source</code> or DevTools Network tab).
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Summary -->
+  <h2>What You Learned</h2>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <h4>New Concepts</h4>
+      <ul>
+        <li>One-to-many relations (<code>@relation</code>, foreign keys, back-relations)</li>
+        <li>Virtual vs real fields in the Prisma schema</li>
+        <li>Optional vs required relations</li>
+        <li>Migration workflow (<code>migrate dev</code>, <code>migrate reset</code>, <code>db push</code>)</li>
+        <li>Seeding with <code>upsert</code> for idempotency</li>
+        <li><code>include</code> vs <code>select</code> for relation queries</li>
+        <li>Nested writes (<code>connect</code>, <code>create</code>)</li>
+        <li>The dev singleton pattern and why it exists</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h4>Key Rules</h4>
+      <ul>
+        <li>Never <code>include: { relation: true }</code> in load functions for models with sensitive fields &mdash; use <code>select</code></li>
+        <li>Optional relations (<code>?</code>) for adding FKs to existing data</li>
+        <li><code>include</code> and <code>select</code> are mutually exclusive at the same level</li>
+        <li>Always read the generated migration SQL before committing</li>
+        <li>Use <code>migrate deploy</code> in production, never <code>db push</code></li>
+        <li>Seed scripts should be idempotent (<code>upsert</code>)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout teacher" style="margin-top:2rem;">
+    <div class="callout-title">Ask your teacher</div>
+    Good follow-up questions to explore with the agent:
+    <ul style="margin-top:0.5rem;padding-left:1.25rem;">
+      <li>How do I add a many-to-many relation (e.g. tags on notes)?</li>
+      <li>When should I use a Prisma transaction vs nested writes?</li>
+      <li>How do I paginate large query results in a load function?</li>
+      <li>What changes when I switch from SQLite to PostgreSQL?</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+  const answers = {};
+
+  function answer(el, qid, isCorrect) {
+    if (answers[qid] !== undefined) return;
+    answers[qid] = isCorrect ? 1 : 0;
+    const options = el.closest('.question').querySelectorAll('.option');
+    options.forEach(o => o.classList.add('disabled'));
+    if (isCorrect) {
+      el.classList.add('correct');
+      document.getElementById(qid + '-correct').classList.add('show');
+    } else {
+      el.classList.add('wrong');
+      document.getElementById(qid + '-wrong').classList.add('show');
+      const allOpts = Array.from(options);
+      allOpts.forEach(o => {
+        const handler = o.getAttribute('onclick');
+        if (handler && handler.includes('true')) {
+          o.classList.add('correct');
+          o.classList.remove('disabled');
+        }
+      });
+    }
+  }
+
+  function showScore() {
+    const total = 6;
+    const score = Object.values(answers).reduce((a, b) => a + b, 0);
+    const unanswered = total - Object.keys(answers).length;
+    const pct = Math.round((score / total) * 100);
+    let msg = pct === 100 ? 'Perfect. You understand relations, migrations, and querying patterns.'
+      : pct >= 80 ? 'Solid. Review the ones you missed, then do the exercises.'
+      : pct >= 60 ? 'Good start. Re-read the include vs select section and the security callout.'
+      : 'Re-read the lesson, especially the relation field types and migration workflow.';
+    const el = document.getElementById('quiz-score');
+    el.innerHTML = `<div style="font-size:1.4rem;margin-bottom:0.4rem;">${score}/${total} &nbsp;(${pct}%)</div><div style="font-weight:400;color:var(--muted)">${msg}${unanswered ? ` (${unanswered} unanswered)` : ''}</div>`;
+    el.classList.add('show');
+  }
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { RouteData } from "$lib/types/auth";
+	import type { AuthTokenPayload } from "$lib/types/auth";
 
-	let { data }: { data: RouteData } = $props();
+	let { data }: { data: { user: AuthTokenPayload | null } } = $props();
 
 	async function logout(e: Event) {
 		e.preventDefault();
