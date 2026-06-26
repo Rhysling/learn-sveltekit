@@ -21,12 +21,14 @@ function saveToStorage(key: string, item: JsonValue) {
 }
 
 export class LocalstorageStore<T extends JsonValue> {
-	key = "";
+	#key = "";
+	#defaultValue: T | null;
 	#value = $state<T | null>(null);
 
-	constructor(key: string) {
-		this.key = key;
-		this.#value = loadFromStorage(this.key);
+	constructor(key: string, defaultValue: T | null = null) {
+		this.#key = key;
+		this.#defaultValue = defaultValue;
+		this.#value = loadFromStorage(this.#key) ?? defaultValue;
 	}
 
 	get value() {
@@ -35,12 +37,11 @@ export class LocalstorageStore<T extends JsonValue> {
 
 	set value(v) {
 		this.#value = v;
-		saveToStorage(this.key, v)
+		saveToStorage(this.#key, v)
 	}
 
 	clear() {
-		this.value = null;
-		saveToStorage(this.key, null);
+		this.value = this.#defaultValue;
 	}
 
 }

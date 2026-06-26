@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { tempStore } from "$lib/context/temperature-store.svelte";
+	import {
+		tempStore,
+		tempStoreLs,
+	} from "$lib/context/temperature-store.svelte";
 	let total = 100;
 	let spent = $state(0);
 
@@ -19,10 +22,10 @@
 		},
 		set value(v) {
 			this._value = v;
-			farenheit._value = v * (9 / 5) + 32;
+			fahrenheit._value = v * (9 / 5) + 32;
 		},
 	});
-	let farenheit = $state({
+	let fahrenheit = $state({
 		_value: 32,
 		get value() {
 			return this._value;
@@ -35,21 +38,21 @@
 
 	class Temperature {
 		#celsius = $state(0);
-		#farenheit = $state(32);
+		#fahrenheit = $state(32);
 
 		get celsius() {
 			return this.#celsius;
 		}
 		set celsius(v) {
 			this.#celsius = v;
-			this.#farenheit = v * (9 / 5) + 32;
+			this.#fahrenheit = v * (9 / 5) + 32;
 		}
 
-		get farenheit() {
-			return this.#farenheit;
+		get fahrenheit() {
+			return this.#fahrenheit;
 		}
-		set farenheit(v) {
-			this.#farenheit = v;
+		set fahrenheit(v) {
+			this.#fahrenheit = v;
 			this.#celsius = ((v - 32) * 5) / 9;
 		}
 	}
@@ -74,19 +77,25 @@
 	<div class="group">
 		<div class="group-title">Using Object (weird)</div>
 		<div>c: <input type="number" bind:value={celsius.value} /></div>
-		<div>f: <input type="number" bind:value={farenheit.value} /></div>
+		<div>f: <input type="number" bind:value={fahrenheit.value} /></div>
 	</div>
 
 	<div class="group">
 		<div class="group-title">Using Class</div>
 		<div>c: <input type="number" bind:value={temp.celsius} /></div>
-		<div>f: <input type="number" bind:value={temp.farenheit} /></div>
+		<div>f: <input type="number" bind:value={temp.fahrenheit} /></div>
 	</div>
 
 	<div class="group">
 		<div class="group-title">Using tempStore</div>
 		<div>c: <input type="number" bind:value={tempStore.celsius} /></div>
-		<div>f: <input type="number" bind:value={tempStore.farenheit} /></div>
+		<div>f: <input type="number" bind:value={tempStore.fahrenheit} /></div>
+	</div>
+
+	<div class="group">
+		<div class="group-title">Using tempStoreLs</div>
+		<div>c: <input type="number" bind:value={tempStoreLs.celsius} /></div>
+		<div>f: <input type="number" bind:value={tempStoreLs.fahrenheit} /></div>
 	</div>
 </div>
 

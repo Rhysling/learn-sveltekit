@@ -22,7 +22,7 @@
 <div class="temperature">
 	<div class="group-title">Using tempStore</div>
 	<div>c: <input type="number" bind:value={tempStore.celsius} /></div>
-	<div>f: <input type="number" bind:value={tempStore.farenheit} /></div>
+	<div>f: <input type="number" bind:value={tempStore.fahrenheit} /></div>
 </div>
 
 <style lang="scss">
