@@ -1,17 +1,14 @@
 <script lang="ts">
 	import { page } from "$app/state";
-	import { pageTree, findPage } from "$lib/context/site-tree";
+	import { pageTree, noAdminTree, findPage } from "$lib/context/site-tree";
 	import type { SitePage } from "$lib/context/site-tree";
 
 	type SiteMapProps = {
+		isAdmin: boolean;
 		pathForMenu?: string;
 	};
 
-	let { pathForMenu = "" }: SiteMapProps = $props();
-
-	let cleanPageRoute = $derived(
-		(page.route.id || "/").replace(/\/\([^)]*\)/g, "") || "/",
-	);
+	let { isAdmin, pathForMenu = "" }: SiteMapProps = $props();
 
 	function buildBreadcrumbs(
 		base: SitePage,
@@ -27,16 +24,16 @@
 		}
 	}
 
-	let crumbs = $derived.by(() =>
-		buildBreadcrumbs(pageTree, [], page.url.pathname),
-	);
+	let tree = $derived(isAdmin ? pageTree : noAdminTree);
+
+	let crumbs = $derived.by(() => buildBreadcrumbs(tree, [], page.url.pathname));
 
 	let currentPage = $derived.by(() => {
-		return crumbs?.length ? crumbs[crumbs.length - 1] : pageTree;
+		return crumbs?.length ? crumbs[crumbs.length - 1] : tree;
 	});
 
 	let parentPage = $derived.by(() => {
-		if (!crumbs?.length || crumbs.length < 2) return pageTree;
+		if (!crumbs?.length || crumbs.length < 2) return tree;
 		return crumbs[crumbs.length - 2];
 	});
 
@@ -59,7 +56,7 @@
 	let menuPages = $derived.by(() => {
 		if (isSiteMap) return [];
 
-		const pg = findPage(pathForMenu);
+		const pg = findPage(pathForMenu, isAdmin);
 		if (!pg) return [];
 		return pg.includeChildren ? [pg, ...pg.children] : [...pg.children];
 	});
@@ -125,7 +122,7 @@
 	<ul>
 		{#each menuPages as mp, i}
 			{@const mpl = menuPages.length - 1}
-			{#if cleanPageRoute === mp.path}
+			{#if page.url.pathname === mp.path}
 				<li style="font-weight:bold;">{mp.title}</li>
 			{:else}
 				<li>

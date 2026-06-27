@@ -3,7 +3,8 @@
 		tempStore,
 		tempStoreLs,
 	} from "$lib/context/temperature-store.svelte";
-	let total = 100;
+
+	const total = 100;
 	let spent = $state(0);
 
 	const left = {
@@ -25,6 +26,7 @@
 			fahrenheit._value = v * (9 / 5) + 32;
 		},
 	});
+
 	let fahrenheit = $state({
 		_value: 32,
 		get value() {

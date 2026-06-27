@@ -1,10 +1,10 @@
 <script lang="ts">
 	import SiteMap from "$components/SiteMap.svelte";
 
-	let { children } = $props();
+	let { data, children } = $props();
 </script>
 
-<SiteMap pathForMenu="/admin" />
+<SiteMap isAdmin={data.user?.isAdmin || false} pathForMenu="/admin" />
 {@render children()}
 
 <style lang="scss">

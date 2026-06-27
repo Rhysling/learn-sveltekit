@@ -3,6 +3,7 @@ export type SitePage = {
 	description: string;
 	path: string;
 	includeChildren?: boolean;
+	isAdminOnly?: boolean;
 	children: SitePage[];
 };
 
@@ -103,6 +104,7 @@ export const pageTree: SitePage = {
 				"A protected admin interface for managing the application.",
 			path: "/admin",
 			includeChildren: true,
+			isAdminOnly: true,
 			children: [
 				{
 					title: "Users",
@@ -121,6 +123,18 @@ export const pageTree: SitePage = {
 	],
 };
 
+function removeAdminNodes(page: SitePage): SitePage {
+	return {
+		...page,
+		children: page.children
+			.filter((c) => !c.isAdminOnly)
+			.map(removeAdminNodes),
+	};
+}
+
+export const noAdminTree: SitePage = removeAdminNodes(pageTree);
+
+
 function findPageRecursive(base: SitePage, path: string): SitePage | undefined {
 	if (base.path === path) return base;
 	for (const c of base.children) {
@@ -129,6 +143,6 @@ function findPageRecursive(base: SitePage, path: string): SitePage | undefined {
 	}
 }
 
-export function findPage(path: string): SitePage | undefined {
-	return findPageRecursive(pageTree, path);
+export function findPage(path: string, isAdmin: boolean): SitePage | undefined {
+	return findPageRecursive(isAdmin ? pageTree : noAdminTree, path);
 }

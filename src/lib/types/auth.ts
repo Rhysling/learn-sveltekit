@@ -1,4 +1,3 @@
-import type { ImageMetadata } from "./media";
 import type { UserModel } from "../../generated/prisma/models/User";
 
 type Prettify<T> = {
@@ -17,11 +16,6 @@ export interface RouteData {
 	currentPath?: string;
 	redirectTo?: string;
 }
-
-export type RouteDataImg = {
-	user: AuthTokenPayload;
-	images: ImageMetadata[];
-};
 
 export interface LoginRequestBody {
 	email: string;

@@ -23,7 +23,7 @@
 			<UserStatus {data} />
 		{/if}
 	</nav>
-	<SiteMap />
+	<SiteMap isAdmin={data.user?.isAdmin || false} />
 
 	{@render children()}
 	<Toast />

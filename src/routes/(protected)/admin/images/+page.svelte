@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { RouteDataImg } from "$lib/types/auth";
 	import { invalidate } from "$app/navigation";
 
-	let { data } = $props() as { data: RouteDataImg };
+	let { data } = $props();
 	let selectedFile: File | null = $state(null);
 	let uploadMessage = $state("");
 	let fileInput = $state<HTMLInputElement | undefined>(undefined);
