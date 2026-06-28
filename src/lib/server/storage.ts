@@ -56,3 +56,8 @@ export async function restoreDb(backupName: string, mainDbName: string) {
 export async function deleteDb(dbName: string) {
 	await fs.unlink(path.join(dbPath, dbName));
 }
+
+export async function uploadDb(mainDbName: string, fileBuffer: Buffer) {
+	backupDb(mainDbName);
+	await fs.writeFile(path.join(dbPath, mainDbName), fileBuffer);
+}
