@@ -118,6 +118,12 @@ export const pageTree: SitePage = {
 					path: "/admin/images",
 					children: [],
 				},
+				{
+					title: "DB Manager",
+					description: "Database management.",
+					path: "/admin/db",
+					children: [],
+				},
 			],
 		},
 	],

@@ -1,8 +1,8 @@
 import prisma from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
 import { hashPassword } from '$lib/server/auth';
-import type { Actions } from './$types';
-import type { PageServerLoad } from './$types';
+import { stringSortFn } from "$lib/utils";
+import type { Actions, PageServerLoad } from './$types';
 import type { UserRemote, LoginRequestBody } from "../../../../lib/types/auth";
 import type { UserModel } from '../../../../generated/prisma/models';
 
@@ -15,12 +15,6 @@ const emptyUser: UserRemote = {
 	isAdmin: false,
 	isDisabled: false,
 	hasPw: false,
-};
-
-const sortFn = (a: string, b: string) => {
-	if (a > b) return 10;
-	if (a < b) return -10;
-	return 0;
 };
 
 export const load: PageServerLoad = async () => {
@@ -37,7 +31,7 @@ export const load: PageServerLoad = async () => {
 				isDisabled: a.isDisabled,
 				hasPw: !!a.password
 			}))
-			.sort((a, b) => sortFn(a.name, b.name))
+			.sort((a, b) => stringSortFn(a.name, b.name))
 	];
 
 	return { users };

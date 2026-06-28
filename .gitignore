@@ -48,5 +48,5 @@ yarn-error.log*
 *.tsbuildinfo
 
 # Project Specific
-dev.db
+prisma/*.db
 uploads/
